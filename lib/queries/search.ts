@@ -22,11 +22,18 @@ export async function search(query: string): Promise<SearchResults> {
       .or(`name.ilike.%${q}%,short_name.ilike.%${q}%`)
       .limit(8),
 
-    supabase
-      .from('players')
-      .select('*, club:clubs(name)')
-      .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
-      .limit(10),
+    (() => {
+      const parts = q.split(/\s+/).filter(Boolean);
+      let filter = `first_name.ilike.%${q}%,last_name.ilike.%${q}%`;
+      if (parts.length >= 2) {
+        filter += `,and(first_name.ilike.%${parts[0]}%,last_name.ilike.%${parts.slice(1).join(' ')}%)`;
+      }
+      return supabase
+        .from('players')
+        .select('*, club:clubs(name)')
+        .or(filter)
+        .limit(10);
+    })(),
 
     supabase
       .from('news')
