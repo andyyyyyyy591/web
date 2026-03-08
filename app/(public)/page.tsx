@@ -94,7 +94,7 @@ export default function PartidosPage() {
         <button
           onClick={() => setLiveMode(false)}
           className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
-            !liveMode ? 'bg-accent/20 text-accent' : 'bg-elevated text-secondary hover:text-primary'
+            !liveMode ? 'bg-accent text-white' : 'bg-elevated text-secondary hover:text-primary'
           }`}
         >
           Calendario

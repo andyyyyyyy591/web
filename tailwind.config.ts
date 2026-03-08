@@ -12,20 +12,20 @@ const config: Config = {
         sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
-        // Dark app palette
-        app:      '#0d0d14',
-        card:     '#13131f',
-        elevated: '#1c1c2e',
-        border:   'rgba(255,255,255,0.08)',
-        primary:  '#f0f0f8',
-        secondary:'#888899',
+        // Light app palette
+        app:      '#f4f6fb',
+        card:     '#ffffff',
+        elevated: '#e8ecf3',
+        border:   'rgba(0,0,0,0.09)',
+        primary:  '#111827',
+        secondary:'#6b7280',
         // Accent
         accent: {
-          DEFAULT: '#00e676',
-          hover:   '#00c853',
-          dim:     'rgba(0,230,118,0.12)',
+          DEFAULT: '#16a34a',
+          hover:   '#15803d',
+          dim:     'rgba(22,163,74,0.12)',
         },
-        live: '#ff3d57',
+        live: '#dc2626',
         // Keep old colors for admin (light theme)
         green: {
           50:  '#f0fdf4',

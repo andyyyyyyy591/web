@@ -5,9 +5,13 @@
 @layer base {
   body {
     @apply bg-app text-primary antialiased;
+    color-scheme: light;
   }
   * {
     -webkit-tap-highlight-color: transparent;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    display: none;
   }
 }
 

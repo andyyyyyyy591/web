@@ -52,7 +52,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card pb-safe shadow-sm">
       <div className="flex h-14 items-stretch">
         {navItems.map((item) => {
           const active = item.href === '/'
