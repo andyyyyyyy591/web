@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { CalendarPicker } from './CalendarPicker';
 
 interface DateItem {
   date: string;
@@ -40,43 +41,21 @@ export function DateBar({ selected, onChange }: Props) {
   const dates = buildDates();
   const scrollRef = useRef<HTMLDivElement>(null);
   const todayRef = useRef<HTMLButtonElement>(null);
-  const dateInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     todayRef.current?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' });
   }, []);
 
   return (
-    <div className="flex items-center border-b border-border">
-      {/* Calendar picker button */}
-      <button
-        onClick={() => dateInputRef.current?.click()}
-        title="Elegir fecha"
-        className="flex-shrink-0 flex items-center justify-center h-10 w-10 text-secondary hover:text-accent transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-          <line x1="16" y1="2" x2="16" y2="6"/>
-          <line x1="8" y1="2" x2="8" y2="6"/>
-          <line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-        <input
-          ref={dateInputRef}
-          type="date"
-          className="sr-only"
-          value={selected}
-          onChange={(e) => e.target.value && onChange(e.target.value)}
-        />
-      </button>
+    <div className="flex items-center border-b border-border bg-card">
+      <CalendarPicker selected={selected} onChange={onChange} />
 
-      {/* Divider */}
       <div className="w-px h-5 bg-border flex-shrink-0" />
 
-      {/* Scrollable dates */}
       <div
         ref={scrollRef}
-        className="flex gap-1 overflow-x-auto px-2 py-2 scrollbar-hide flex-1"
-        style={{ scrollbarWidth: 'none' }}
+        className="flex gap-1 overflow-x-auto px-2 py-2 flex-1"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {dates.map((item) => {
           const isSelected = item.date === selected;
