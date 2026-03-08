@@ -3,20 +3,39 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createMatchDate, createMatchesBatch } from '@/lib/actions/matches';
+import { getTournamentClubsForFixture } from '@/lib/actions/tournaments';
 import { Button } from '@/components/ui/Button';
 import { BackButton } from '@/components/ui/BackButton';
-import type { TournamentWithRelations, Club } from '@/types';
+import type { TournamentWithRelations, Club, TournamentFormat } from '@/types';
 
 interface MatchRow {
   homeClubId: string;
   awayClubId: string;
   scheduledAt: string;
   stadium: string;
+  zoneLabel?: string; // solo para display
 }
 
 function emptyRow(): MatchRow {
   return { homeClubId: '', awayClubId: '', scheduledAt: '', stadium: '' };
 }
+
+/** Genera todos los pares únicos de un array de ids */
+function roundRobinPairs(ids: string[]): [string, string][] {
+  const pairs: [string, string][] = [];
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      pairs.push([ids[i], ids[j]]);
+    }
+  }
+  return pairs;
+}
+
+const FORMAT_BADGE: Record<TournamentFormat, { label: string; color: string }> = {
+  todos_contra_todos: { label: 'Todos contra todos', color: 'bg-blue-100 text-blue-700' },
+  zonas:              { label: 'Zona A / Zona B',    color: 'bg-purple-100 text-purple-700' },
+  eliminatorias:      { label: 'Eliminatorias',      color: 'bg-orange-100 text-orange-700' },
+};
 
 interface Props {
   tournaments: TournamentWithRelations[];
@@ -39,14 +58,19 @@ export function FixtureForm({ tournaments, clubs }: Props) {
 
   // Paso 2
   const [rows, setRows] = useState<MatchRow[]>([emptyRow(), emptyRow()]);
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
-  // Grupos de torneos por temporada
   const bySeasonId = tournaments.reduce<Record<string, TournamentWithRelations[]>>((acc, t) => {
     const key = t.season.id;
     if (!acc[key]) acc[key] = [];
     acc[key].push(t);
     return acc;
   }, {});
+
+  const selectedTournament = tournaments.find((t) => t.id === tournamentId);
+  const tournamentFormat: TournamentFormat = (selectedTournament as any)?.format ?? 'todos_contra_todos';
+  const formatBadge = FORMAT_BADGE[tournamentFormat];
 
   async function handleCreateFecha(e: React.FormEvent) {
     e.preventDefault();
@@ -62,6 +86,51 @@ export function FixtureForm({ tournaments, clubs }: Props) {
     if (result.error) { setError(result.error); return; }
     setMatchDateId(result.data!.id);
     setStep(2);
+  }
+
+  async function handleAutoGenerate() {
+    if (!tournamentId) return;
+    setGenerating(true);
+    setGenerateError(null);
+
+    const tournamentClubs = await getTournamentClubsForFixture(tournamentId);
+    setGenerating(false);
+
+    if (tournamentClubs.length < 2) {
+      setGenerateError('El torneo necesita al menos 2 equipos registrados');
+      return;
+    }
+
+    let generatedRows: MatchRow[] = [];
+
+    if (tournamentFormat === 'zonas') {
+      const zoneA = tournamentClubs.filter((c) => c.zone === 'A');
+      const zoneB = tournamentClubs.filter((c) => c.zone === 'B');
+
+      if (zoneA.length < 2 && zoneB.length < 2) {
+        setGenerateError('Asigná los equipos a Zona A o Zona B en la gestión del torneo');
+        return;
+      }
+
+      const pairsA = roundRobinPairs(zoneA.map((c) => c.club_id));
+      const pairsB = roundRobinPairs(zoneB.map((c) => c.club_id));
+
+      generatedRows = [
+        ...pairsA.map(([h, a]) => ({ homeClubId: h, awayClubId: a, scheduledAt: '', stadium: '', zoneLabel: 'Zona A' })),
+        ...pairsB.map(([h, a]) => ({ homeClubId: h, awayClubId: a, scheduledAt: '', stadium: '', zoneLabel: 'Zona B' })),
+      ];
+    } else {
+      // todos_contra_todos (eliminatorias se maneja manual)
+      const pairs = roundRobinPairs(tournamentClubs.map((c) => c.club_id));
+      generatedRows = pairs.map(([h, a]) => ({ homeClubId: h, awayClubId: a, scheduledAt: '', stadium: '' }));
+    }
+
+    if (generatedRows.length === 0) {
+      setGenerateError('No se pudieron generar cruces. Revisá los equipos registrados.');
+      return;
+    }
+
+    setRows(generatedRows);
   }
 
   function updateRow(index: number, field: keyof MatchRow, value: string) {
@@ -99,16 +168,12 @@ export function FixtureForm({ tournaments, clubs }: Props) {
     setSaved(true);
   }
 
-  const selectedTournament = tournaments.find((t) => t.id === tournamentId);
-
   if (saved) {
     return (
       <div className="max-w-lg space-y-4">
         <div className="rounded-xl border border-green-200 bg-green-50 p-6 text-center space-y-3">
           <p className="text-4xl">✅</p>
-          <p className="font-semibold text-green-800">
-            Fixture guardado correctamente
-          </p>
+          <p className="font-semibold text-green-800">Fixture guardado correctamente</p>
           <p className="text-sm text-green-600">
             {rows.filter((r) => r.homeClubId && r.awayClubId).length} partido(s) creado(s) en{' '}
             {fechaLabel || `Fecha ${fechaNumero}`}
@@ -126,6 +191,9 @@ export function FixtureForm({ tournaments, clubs }: Props) {
     );
   }
 
+  // Agrupación por zoneLabel para mostrar separadores en paso 2
+  const rowsWithZones = rows.some((r) => r.zoneLabel);
+
   return (
     <div className="max-w-3xl space-y-4">
       <div className="flex items-center gap-3">
@@ -133,7 +201,7 @@ export function FixtureForm({ tournaments, clubs }: Props) {
         <h1 className="text-2xl font-bold text-slate-900">Cargar fixture</h1>
       </div>
 
-      {/* Paso 1: torneo + fecha */}
+      {/* Paso 1 */}
       <div className={`rounded-xl border bg-white p-6 space-y-4 ${step === 2 ? 'border-green-200' : 'border-slate-200'}`}>
         <div className="flex items-center gap-3">
           <span className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold ${
@@ -168,6 +236,13 @@ export function FixtureForm({ tournaments, clubs }: Props) {
                   </optgroup>
                 ))}
               </select>
+
+              {/* Badge de formato */}
+              {selectedTournament && (
+                <span className={`mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${formatBadge.color}`}>
+                  {formatBadge.label}
+                </span>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -201,18 +276,42 @@ export function FixtureForm({ tournaments, clubs }: Props) {
         )}
       </div>
 
-      {/* Paso 2: partidos */}
+      {/* Paso 2 */}
       {step === 2 && (
         <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-sm font-bold text-white">2</span>
-            <h2 className="font-semibold text-slate-800">Partidos de la fecha</h2>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-sm font-bold text-white">2</span>
+              <h2 className="font-semibold text-slate-800">Partidos de la fecha</h2>
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${formatBadge.color}`}>
+                {formatBadge.label}
+              </span>
+            </div>
+
+            {/* Botón auto-generar (solo para todos_contra_todos y zonas) */}
+            {tournamentFormat !== 'eliminatorias' && (
+              <button
+                type="button"
+                onClick={handleAutoGenerate}
+                disabled={generating}
+                className="flex items-center gap-1.5 rounded-lg border border-green-300 bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-700 hover:bg-green-100 disabled:opacity-50 transition-colors"
+              >
+                {generating ? (
+                  '⏳ Generando...'
+                ) : (
+                  <>⚡ Auto-generar cruces</>
+                )}
+              </button>
+            )}
           </div>
+
+          {generateError && (
+            <p className="rounded-lg bg-orange-50 px-3 py-2 text-sm text-orange-600">{generateError}</p>
+          )}
 
           <form onSubmit={handleSaveFixture} className="space-y-3">
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
-            {/* Encabezado */}
             <div className="grid grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 px-1">
               <span className="col-span-4">Local</span>
               <span className="col-span-4">Visitante</span>
@@ -220,57 +319,30 @@ export function FixtureForm({ tournaments, clubs }: Props) {
               <span className="col-span-1" />
             </div>
 
-            {rows.map((row, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                <div className="col-span-4">
-                  <select
-                    value={row.homeClubId}
-                    onChange={(e) => updateRow(i, 'homeClubId', e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-                  >
-                    <option value="">— Local —</option>
-                    {clubs.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+            {/* Si hay zonas, mostrar separadores */}
+            {rowsWithZones ? (
+              (() => {
+                const sections: { zone: string; rows: { row: MatchRow; index: number }[] }[] = [];
+                rows.forEach((row, index) => {
+                  const zone = row.zoneLabel ?? 'Sin zona';
+                  const existing = sections.find((s) => s.zone === zone);
+                  if (existing) existing.rows.push({ row, index });
+                  else sections.push({ zone, rows: [{ row, index }] });
+                });
+                return sections.map((section) => (
+                  <div key={section.zone} className="space-y-2">
+                    <p className="text-xs font-bold uppercase tracking-wide text-purple-600 pt-1">{section.zone}</p>
+                    {section.rows.map(({ row, index }) => (
+                      <MatchRowInput key={index} row={row} index={index} clubs={clubs} onUpdate={updateRow} onRemove={removeRow} canRemove={rows.length > 1} />
                     ))}
-                  </select>
-                </div>
-                <div className="col-span-4">
-                  <select
-                    value={row.awayClubId}
-                    onChange={(e) => updateRow(i, 'awayClubId', e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-                  >
-                    <option value="">— Visitante —</option>
-                    {clubs
-                      .filter((c) => c.id !== row.homeClubId)
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                  </select>
-                </div>
-                <div className="col-span-3">
-                  <input
-                    type="datetime-local"
-                    value={row.scheduledAt}
-                    onChange={(e) => updateRow(i, 'scheduledAt', e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-                  />
-                </div>
-                <div className="col-span-1 flex justify-center">
-                  {rows.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeRow(i)}
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+                  </div>
+                ));
+              })()
+            ) : (
+              rows.map((row, i) => (
+                <MatchRowInput key={i} row={row} index={i} clubs={clubs} onUpdate={updateRow} onRemove={removeRow} canRemove={rows.length > 1} />
+              ))
+            )}
 
             <button
               type="button"
@@ -294,6 +366,63 @@ export function FixtureForm({ tournaments, clubs }: Props) {
           </form>
         </div>
       )}
+    </div>
+  );
+}
+
+function MatchRowInput({ row, index, clubs, onUpdate, onRemove, canRemove }: {
+  row: MatchRow;
+  index: number;
+  clubs: Club[];
+  onUpdate: (i: number, field: keyof MatchRow, val: string) => void;
+  onRemove: (i: number) => void;
+  canRemove: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-12 gap-2 items-center">
+      <div className="col-span-4">
+        <select
+          value={row.homeClubId}
+          onChange={(e) => onUpdate(index, 'homeClubId', e.target.value)}
+          className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+        >
+          <option value="">— Local —</option>
+          {clubs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </div>
+      <div className="col-span-4">
+        <select
+          value={row.awayClubId}
+          onChange={(e) => onUpdate(index, 'awayClubId', e.target.value)}
+          className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+        >
+          <option value="">— Visitante —</option>
+          {clubs.filter((c) => c.id !== row.homeClubId).map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </div>
+      <div className="col-span-3">
+        <input
+          type="datetime-local"
+          value={row.scheduledAt}
+          onChange={(e) => onUpdate(index, 'scheduledAt', e.target.value)}
+          className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+        />
+      </div>
+      <div className="col-span-1 flex justify-center">
+        {canRemove && (
+          <button
+            type="button"
+            onClick={() => onRemove(index)}
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 }

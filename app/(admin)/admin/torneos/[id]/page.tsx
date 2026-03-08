@@ -3,6 +3,7 @@ import { requireSuperAdmin } from '@/lib/utils/admin-guard';
 import { createClient } from '@/lib/supabase/server';
 import { getAllClubsForTournamentAdmin } from '@/lib/queries/tournament-clubs';
 import { TournamentClubsForm } from './TournamentClubsForm';
+import type { TournamentFormat } from '@/types';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -23,9 +24,13 @@ export default async function TournamentClubsPage({ params }: Props) {
 
   const { allClubs, registered } = await getAllClubsForTournamentAdmin(id);
 
-  // Primera and Reserva use zones
-  const divisionSlug = (tournament.division as any)?.slug ?? '';
-  const hasZones = divisionSlug === 'primera' || divisionSlug === 'reserva';
+  const format: TournamentFormat = (tournament as any).format ?? 'todos_contra_todos';
+
+  const FORMAT_LABELS: Record<TournamentFormat, string> = {
+    todos_contra_todos: 'Todos contra todos',
+    zonas: 'Zona A / Zona B',
+    eliminatorias: 'Cruces / Eliminatorias',
+  };
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -34,7 +39,7 @@ export default async function TournamentClubsPage({ params }: Props) {
           {(tournament.division as any)?.name} — {(tournament.season as any)?.name}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Equipos registrados en este torneo{hasZones ? ' (con zonas A/B)' : ''}
+          Formato actual: <span className="font-medium text-slate-700">{FORMAT_LABELS[format]}</span>
         </p>
       </div>
 
@@ -42,7 +47,7 @@ export default async function TournamentClubsPage({ params }: Props) {
         tournamentId={id}
         allClubs={allClubs}
         registered={registered}
-        hasZones={hasZones}
+        format={format}
       />
     </div>
   );

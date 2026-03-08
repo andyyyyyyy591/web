@@ -107,12 +107,15 @@ export interface Player {
   updated_at: string;
 }
 
+export type TournamentFormat = 'todos_contra_todos' | 'zonas' | 'eliminatorias';
+
 export interface Tournament {
   id: string;
   season_id: string;
   division_id: string;
   name: string;
   is_active: boolean;
+  format: TournamentFormat;
   created_at: string;
 }
 

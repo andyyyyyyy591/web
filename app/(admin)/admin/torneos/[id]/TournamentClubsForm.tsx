@@ -2,30 +2,53 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import type { Club } from '@/types';
+import type { Club, TournamentFormat } from '@/types';
 import type { TournamentClubWithClub } from '@/lib/queries/tournament-clubs';
 import {
   addClubToTournament,
   removeClubFromTournament,
   updateClubZone,
 } from '@/lib/actions/tournament-clubs';
+import { updateTournamentFormat } from '@/lib/actions/tournaments';
+
+const FORMAT_OPTIONS: { value: TournamentFormat; label: string; desc: string }[] = [
+  { value: 'todos_contra_todos', label: 'Todos contra todos', desc: 'Una tabla, todos los equipos juegan entre sí' },
+  { value: 'zonas',              label: 'Zona A / Zona B',    desc: 'Dos grupos, tabla separada por zona' },
+  { value: 'eliminatorias',      label: 'Cruces / Eliminatorias', desc: 'Ida y vuelta, llaves, sin tabla de posiciones' },
+];
 
 interface Props {
   tournamentId: string;
   allClubs: Club[];
   registered: TournamentClubWithClub[];
-  hasZones: boolean;
+  format: TournamentFormat;
 }
 
-export function TournamentClubsForm({ tournamentId, allClubs, registered, hasZones }: Props) {
+export function TournamentClubsForm({ tournamentId, allClubs, registered, format: initialFormat }: Props) {
+  const [format, setFormat] = useState<TournamentFormat>(initialFormat);
+  const [savingFormat, setSavingFormat] = useState(false);
+  const [formatError, setFormatError] = useState<string | null>(null);
+
   const [items, setItems] = useState<TournamentClubWithClub[]>(registered);
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedClubId, setSelectedClubId] = useState('');
   const [selectedZone, setSelectedZone] = useState<'A' | 'B' | ''>('');
 
+  const hasZones = format === 'zonas';
+
   const registeredIds = new Set(items.map((i) => i.club_id));
   const availableClubs = allClubs.filter((c) => !registeredIds.has(c.id));
+
+  async function handleFormatChange(newFormat: TournamentFormat) {
+    if (newFormat === format) return;
+    setSavingFormat(true);
+    setFormatError(null);
+    const result = await updateTournamentFormat(tournamentId, newFormat);
+    setSavingFormat(false);
+    if (result.error) { setFormatError(result.error); return; }
+    setFormat(newFormat);
+  }
 
   async function handleAdd() {
     if (!selectedClubId) return;
@@ -38,7 +61,6 @@ export function TournamentClubsForm({ tournamentId, allClubs, registered, hasZon
     );
     setLoading(null);
     if (result.error) { setError(result.error); return; }
-    // Optimistic update
     const club = allClubs.find((c) => c.id === selectedClubId)!;
     setItems((prev) => [...prev, {
       id: `temp-${Date.now()}`,
@@ -77,6 +99,34 @@ export function TournamentClubsForm({ tournamentId, allClubs, registered, hasZon
 
   return (
     <div className="space-y-6">
+      {/* Formato del torneo */}
+      <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-slate-800">Formato del torneo</h2>
+          {savingFormat && <span className="text-xs text-slate-400">Guardando...</span>}
+          {formatError && <span className="text-xs text-red-500">{formatError}</span>}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {FORMAT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => handleFormatChange(opt.value)}
+              disabled={savingFormat}
+              className={`rounded-xl border-2 p-3 text-left transition-colors ${
+                format === opt.value
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-slate-200 bg-white hover:border-slate-300'
+              }`}
+            >
+              <p className={`text-sm font-semibold ${format === opt.value ? 'text-green-700' : 'text-slate-800'}`}>
+                {opt.label}
+              </p>
+              <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
       {/* Add club form */}
