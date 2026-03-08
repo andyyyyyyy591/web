@@ -1,11 +1,13 @@
 import { getTournaments } from '@/lib/queries/tournaments';
 import { getSuspendedPlayers } from '@/lib/queries/suspensions';
 import { getAllPlayers } from '@/lib/queries/players';
+import { requireSuperAdmin } from '@/lib/utils/admin-guard';
 import { SuspensionesAdmin } from './SuspensionesAdmin';
 
 export const revalidate = 0;
 
 export default async function SuspensionesPage() {
+  await requireSuperAdmin();
   const [tournaments, allPlayers] = await Promise.all([
     getTournaments(),
     getAllPlayers(),
