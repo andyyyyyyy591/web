@@ -116,8 +116,8 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
         </div>
       </div>
 
-      {/* Control de estado — solo super admin */}
-      {isSuperAdmin && available.length > 0 && (
+      {/* Control de estado — admin y team admin */}
+      {available.length > 0 && (
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           {transitionError && (
             <p className="mb-3 text-sm text-red-600">{transitionError}</p>
