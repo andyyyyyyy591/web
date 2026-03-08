@@ -17,9 +17,9 @@ export function LiveClock({ match }: LiveClockProps) {
     : `${clock.minute}'`;
 
   return (
-    <div className="flex items-center justify-center gap-2 text-red-600">
+    <div className="flex items-center justify-center gap-1.5 text-live">
       <span className="live-dot" />
-      <span className="text-2xl font-bold tabular-nums">{display}</span>
+      <span className="text-sm font-bold tabular-nums">{display}</span>
     </div>
   );
 }

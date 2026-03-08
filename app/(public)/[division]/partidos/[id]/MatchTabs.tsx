@@ -6,6 +6,7 @@ import type { MatchDetail } from '@/types';
 import { MatchTimeline } from '@/components/match/MatchTimeline';
 import { Formation } from '@/components/match/Formation';
 import { MatchLineup } from '@/components/match/MatchLineup';
+import { LiveClock } from '@/components/match/LiveClock';
 import { isLive, STATUS_LABELS } from '@/types';
 
 const TABS = ['Previa', 'Alineación', 'Directo'] as const;
@@ -80,7 +81,7 @@ export function MatchTabs({ match }: Props) {
           </div>
 
           {/* Score */}
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center gap-1">
             {(live || finished) ? (
               <span className="text-4xl font-black text-primary tabular-nums">
                 {match.home_score} – {match.away_score}
@@ -90,6 +91,7 @@ export function MatchTabs({ match }: Props) {
                 {formatTime(match.scheduled_at)}
               </span>
             )}
+            {live && <LiveClock match={match} />}
           </div>
 
           {/* Away */}

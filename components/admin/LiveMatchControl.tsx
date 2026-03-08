@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRealtimeMatch } from '@/hooks/useRealtimeMatch';
 import { useRealtimeEvents } from '@/hooks/useRealtimeEvents';
 import { EventForm } from '@/components/admin/EventForm';
+import { LineupForm } from '@/components/admin/LineupForm';
 import { MatchTimeline } from '@/components/match/MatchTimeline';
 import { LiveClock } from '@/components/match/LiveClock';
 import { deleteMatchEvent } from '@/lib/actions/events';
@@ -54,7 +55,7 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
   const events = useRealtimeEvents(initialMatch.id, initialMatch.events);
   const [transitioning, setTransitioning] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'event' | 'timeline'>('event');
+  const [activeTab, setActiveTab] = useState<'event' | 'lineup' | 'timeline'>('lineup');
 
   const isSuperAdmin = role === 'admin';
   const live = isLive(match.status);
@@ -146,16 +147,24 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
       {/* Tabs */}
       <div className="flex rounded-xl border border-slate-200 bg-white overflow-hidden">
         <button
+          onClick={() => setActiveTab('lineup')}
+          className={`flex-1 py-3 text-xs font-semibold transition-colors ${
+            activeTab === 'lineup' ? 'bg-green-600 text-white' : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          👕 Alineación
+        </button>
+        <button
           onClick={() => setActiveTab('event')}
-          className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+          className={`flex-1 py-3 text-xs font-semibold transition-colors ${
             activeTab === 'event' ? 'bg-green-600 text-white' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
-          ⚽ Cargar evento
+          ⚽ Evento
         </button>
         <button
           onClick={() => setActiveTab('timeline')}
-          className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+          className={`flex-1 py-3 text-xs font-semibold transition-colors ${
             activeTab === 'timeline' ? 'bg-green-600 text-white' : 'text-slate-600 hover:bg-slate-50'
           }`}
         >
@@ -164,7 +173,37 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
       </div>
 
       {/* Panel activo */}
-      {activeTab === 'event' ? (
+      {activeTab === 'lineup' && (
+        <div className="space-y-6">
+          {(() => {
+            const clubsToShow = lockedClubId
+              ? clubs.filter((c) => c.id === lockedClubId)
+              : clubs;
+            return clubsToShow.map((club) => {
+              const clubPlayers = players.filter((p) => p.club_id === club.id);
+              const existingLineup = [
+                ...initialMatch.home_starters,
+                ...initialMatch.home_subs,
+                ...initialMatch.away_starters,
+                ...initialMatch.away_subs,
+              ].filter((l) => l.club_id === club.id);
+              return (
+                <div key={club.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <LineupForm
+                    matchId={match.id}
+                    clubId={club.id}
+                    clubName={club.name}
+                    players={clubPlayers}
+                    existingLineup={existingLineup}
+                  />
+                </div>
+              );
+            });
+          })()}
+        </div>
+      )}
+
+      {activeTab === 'event' && (
         (match.status === 'scheduled' && !isSuperAdmin) ? (
           <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-sm text-slate-400">
             El partido aún no ha comenzado
@@ -177,7 +216,9 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
             lockedClubId={lockedClubId}
           />
         )
-      ) : (
+      )}
+
+      {activeTab === 'timeline' && (
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <div className="max-h-96 overflow-y-auto">
             {events.length === 0 ? (

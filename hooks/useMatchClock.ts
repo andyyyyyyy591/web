@@ -16,7 +16,7 @@ export function useMatchClock(match: Match): MatchClock {
 
     const interval = setInterval(() => {
       setClock(calculateMatchClock(match));
-    }, 30_000);
+    }, 10_000);
 
     return () => clearInterval(interval);
   }, [match]);
