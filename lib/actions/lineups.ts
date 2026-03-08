@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export interface LineupEntry {
   player_id: string;
@@ -11,7 +11,7 @@ export interface LineupEntry {
 }
 
 export async function saveLineup(matchId: string, clubId: string, entries: LineupEntry[]) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Delete existing lineup for this club+match
   const { error: delErr } = await supabase
