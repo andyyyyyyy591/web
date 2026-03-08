@@ -72,6 +72,16 @@ export async function updateMatchStatus(
 
 export async function createMatchDate(tournamentId: string, number: number, label?: string) {
   const supabase = await createClient();
+
+  // Check if it already exists — if so, return it
+  const { data: existing } = await supabase
+    .from('match_dates')
+    .select()
+    .eq('tournament_id', tournamentId)
+    .eq('number', number)
+    .single();
+  if (existing) return { data: existing };
+
   const { data, error } = await supabase
     .from('match_dates')
     .insert({ tournament_id: tournamentId, number, label: label || `Fecha ${number}` })
