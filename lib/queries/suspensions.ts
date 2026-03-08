@@ -9,8 +9,9 @@ export interface SuspendedPlayer {
   club_name: string;
   club_logo: string | null;
   reason: string;
-  card_match_date: number | null;   // fecha en que recibió la tarjeta
-  suspended_for_date: number;       // fecha en que está suspendido
+  card_match_date: number | null;     // fecha en que recibió la tarjeta
+  suspended_for_date: number;         // primera fecha suspendido
+  suspended_until_date: number | null; // última fecha suspendido (null = solo una)
   served: boolean;
   /** If this came from a manual entry, its DB id (for edit/delete) */
   manual_id?: string;
@@ -44,7 +45,7 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
   const { data: manualRows } = await supabase
     .from('player_suspensions')
     .select(`
-      id, player_id, reason, card_match_date, suspended_for_date, notes,
+      id, player_id, reason, card_match_date, suspended_for_date, suspended_until_date, notes,
       player:players(first_name, last_name, photo_url, club_id, club:clubs(name, logo_url))
     `)
     .eq('tournament_id', tournamentId);
@@ -65,6 +66,7 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
       reason: row.reason,
       card_match_date: row.card_match_date ?? null,
       suspended_for_date: row.suspended_for_date,
+      suspended_until_date: (row as any).suspended_until_date ?? null,
       served: false,
       manual_id: row.id,
       notes: row.notes,
@@ -152,6 +154,7 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
       reason: event.type === 'red_card' ? 'Tarjeta roja' : 'Doble amarilla',
       card_match_date: cardDateNum,
       suspended_for_date: suspendedForDate,
+      suspended_until_date: null,
       served: actuallyServed,
     });
   }
@@ -194,6 +197,7 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
         reason: `Acumulación de amarillas (${threshold})`,
         card_match_date: cardDateNum,
         suspended_for_date: suspendedForDate,
+        suspended_until_date: null,
         served: actuallyServed,
       });
     }
@@ -202,7 +206,8 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
   // Mark served status for manual suspensions now that we have playerMatchDates
   for (const ms of manualSuspensions) {
     const playerDates = playerMatchDates.get(ms.player_id) ?? new Set();
-    ms.served = [...playerDates].some((d) => d >= ms.suspended_for_date);
+    const lastSuspDate = ms.suspended_until_date ?? ms.suspended_for_date;
+    ms.served = [...playerDates].some((d) => d >= lastSuspDate);
   }
 
   const all = [...computedSuspensions, ...manualSuspensions];

@@ -41,6 +41,7 @@ const BLANK_FORM = {
   reason: 'Suspensión manual',
   cardDate: '',
   suspDate: '',
+  suspUntilDate: '',
   notes: '',
 };
 
@@ -77,6 +78,7 @@ export function SuspensionesAdmin({ tournaments, initialData, players }: Props) 
       reason: s.reason,
       cardDate: s.card_match_date !== null && s.card_match_date !== undefined ? String(s.card_match_date) : '',
       suspDate: String(s.suspended_for_date),
+      suspUntilDate: s.suspended_until_date != null ? String(s.suspended_until_date) : '',
       notes: s.notes ?? '',
     });
     setFormError(null);
@@ -96,6 +98,7 @@ export function SuspensionesAdmin({ tournaments, initialData, players }: Props) 
       reason: form.reason || 'Suspensión manual',
       card_match_date: form.cardDate ? parseInt(form.cardDate) : null,
       suspended_for_date: parseInt(form.suspDate),
+      suspended_until_date: form.suspUntilDate ? parseInt(form.suspUntilDate) : null,
       notes: form.notes || null,
     });
 
@@ -199,10 +202,10 @@ export function SuspensionesAdmin({ tournaments, initialData, players }: Props) 
                 />
               </label>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <label className="block">
                   <span className="mb-1.5 block text-xs font-semibold text-slate-600">
-                    Fecha de tarjeta <span className="font-normal text-slate-400">(opt.)</span>
+                    F. tarjeta <span className="font-normal text-slate-400">(opt.)</span>
                   </span>
                   <input
                     type="number"
@@ -215,7 +218,7 @@ export function SuspensionesAdmin({ tournaments, initialData, players }: Props) 
                 </label>
 
                 <label className="block">
-                  <span className="mb-1.5 block text-xs font-semibold text-slate-600">Suspendido en Fecha</span>
+                  <span className="mb-1.5 block text-xs font-semibold text-slate-600">Susp. desde</span>
                   <input
                     type="number"
                     min="1"
@@ -226,7 +229,26 @@ export function SuspensionesAdmin({ tournaments, initialData, players }: Props) 
                     required
                   />
                 </label>
+
+                <label className="block">
+                  <span className="mb-1.5 block text-xs font-semibold text-slate-600">
+                    Susp. hasta <span className="font-normal text-slate-400">(opt.)</span>
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.suspUntilDate}
+                    onChange={(e) => setForm((f) => ({ ...f, suspUntilDate: e.target.value }))}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-red-500 focus:outline-none"
+                    placeholder="ej. 8"
+                  />
+                </label>
               </div>
+              {form.suspDate && form.suspUntilDate && parseInt(form.suspUntilDate) > parseInt(form.suspDate) && (
+                <p className="text-xs text-orange-600 font-medium">
+                  Suspendido por {parseInt(form.suspUntilDate) - parseInt(form.suspDate) + 1} fechas (F{form.suspDate} a F{form.suspUntilDate})
+                </p>
+              )}
 
               <label className="block">
                 <span className="mb-1.5 block text-xs font-semibold text-slate-600">
@@ -364,7 +386,14 @@ function SuspCard({ s, onEdit, onDelete, deleting, pending }: {
             <p className="text-xs text-slate-400">Fecha {s.card_match_date}</p>
           )}
           <p className={`text-xs font-bold ${pending ? 'text-red-600' : 'text-slate-500'}`}>
-            {pending ? `Susp. F${s.suspended_for_date}` : `Cumplida F${s.suspended_for_date}`}
+            {s.suspended_until_date && s.suspended_until_date > s.suspended_for_date
+              ? (pending
+                  ? `Susp. F${s.suspended_for_date}–F${s.suspended_until_date}`
+                  : `Cumplida F${s.suspended_for_date}–F${s.suspended_until_date}`)
+              : (pending
+                  ? `Susp. F${s.suspended_for_date}`
+                  : `Cumplida F${s.suspended_for_date}`)
+            }
           </p>
         </div>
 

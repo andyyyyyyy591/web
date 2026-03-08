@@ -10,9 +10,14 @@ export async function upsertSuspension(payload: {
   reason: string;
   card_match_date?: number | null;
   suspended_for_date: number;
+  suspended_until_date?: number | null;
   notes?: string | null;
 }) {
   const admin = createAdminClient();
+
+  const untilDate = payload.suspended_until_date && payload.suspended_until_date > payload.suspended_for_date
+    ? payload.suspended_until_date
+    : null;
 
   if (payload.id) {
     const { error } = await admin
@@ -21,6 +26,7 @@ export async function upsertSuspension(payload: {
         reason: payload.reason,
         card_match_date: payload.card_match_date ?? null,
         suspended_for_date: payload.suspended_for_date,
+        suspended_until_date: untilDate,
         notes: payload.notes ?? null,
       })
       .eq('id', payload.id);
@@ -34,6 +40,7 @@ export async function upsertSuspension(payload: {
         reason: payload.reason,
         card_match_date: payload.card_match_date ?? null,
         suspended_for_date: payload.suspended_for_date,
+        suspended_until_date: untilDate,
         notes: payload.notes ?? null,
       });
     if (error) return { error: error.message };
