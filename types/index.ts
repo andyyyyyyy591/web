@@ -338,6 +338,8 @@ export interface UpdateMatchPayload {
   referee_fourth?: string;
   notes?: string;
   image_url?: string;
+  zone?: string | null;
+  round_label?: string | null;
 }
 
 export interface AddMatchEventPayload {

@@ -7,9 +7,13 @@ import type { MatchWithClubs } from '@/types';
 import { isLive } from '@/types';
 import { calculateMatchClock } from '@/lib/utils/match-clock';
 
-function formatTime(scheduledAt: string | null): string {
-  if (!scheduledAt) return '—';
-  return new Date(scheduledAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+function formatScheduled(scheduledAt: string | null): { date: string; time: string } {
+  if (!scheduledAt) return { date: '', time: '—' };
+  const d = new Date(scheduledAt);
+  return {
+    date: d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' }),
+    time: d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+  };
 }
 
 const STATUS_SHORT: Record<string, string> = {
@@ -106,7 +110,15 @@ export function MatchRow({ match }: Props) {
             <span>{match.away_score}</span>
           </div>
         ) : match.status === 'scheduled' ? (
-          <span className="text-sm font-semibold text-primary">{formatTime(match.scheduled_at)}</span>
+          (() => {
+            const { date, time } = formatScheduled(match.scheduled_at);
+            return (
+              <div className="flex flex-col items-center leading-tight">
+                {date && <span className="text-[10px] text-secondary">{date}</span>}
+                <span className="text-sm font-semibold text-primary">{time}</span>
+              </div>
+            );
+          })()
         ) : (
           <span className="text-xs font-semibold text-secondary">{STATUS_SHORT[match.status] ?? match.status}</span>
         )}

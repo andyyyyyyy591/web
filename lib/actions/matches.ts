@@ -18,8 +18,8 @@ export async function createMatch(payload: CreateMatchPayload) {
 }
 
 export async function updateMatch(id: string, payload: UpdateMatchPayload) {
-  const supabase = await createClient();
-  const { error } = await supabase
+  const admin = createAdminClient();
+  const { error } = await admin
     .from('matches')
     .update(payload)
     .eq('id', id);
