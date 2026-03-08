@@ -1,6 +1,23 @@
 import { createClient } from '@/lib/supabase/server';
 import type { TournamentWithRelations } from '@/types';
 
+export async function getSeasonsWithTournaments() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('seasons')
+    .select('*, tournaments(id, name, division:divisions(name))')
+    .order('year', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data as Array<{
+    id: string;
+    name: string;
+    year: number;
+    start_date: string | null;
+    end_date: string | null;
+    tournaments: Array<{ id: string; name: string; division: { name: string } | null }>;
+  }>;
+}
+
 export async function getTournaments(): Promise<TournamentWithRelations[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
