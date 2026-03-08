@@ -1,0 +1,72 @@
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { getMatchById } from '@/lib/queries/matches';
+import { STATUS_LABELS } from '@/types';
+import { formatDateTime } from '@/lib/utils/format';
+import { Badge } from '@/components/ui/Badge';
+import { BackButton } from '@/components/ui/BackButton';
+import { MatchImageUpload } from './MatchImageUpload';
+import { requireSuperAdmin } from '@/lib/utils/admin-guard';
+
+interface Props {
+  params: Promise<{ id: string }>;
+}
+
+export default async function AdminMatchPage({ params }: Props) {
+  await requireSuperAdmin();
+  const { id } = await params;
+  const match = await getMatchById(id);
+  if (!match) notFound();
+
+  const hasLive = match.tournament.division.has_live_mode;
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="flex items-center gap-3">
+        <BackButton href="/admin/partidos" />
+        <h1 className="text-xl font-bold text-slate-900">
+          {match.home_club.name} vs {match.away_club.name}
+        </h1>
+        {hasLive && (
+          <Link
+            href={`/admin/partidos/${id}/live`}
+            className="ml-auto rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+          >
+            Panel en vivo →
+          </Link>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-6">
+        <dl className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <dt className="text-slate-500">Estado</dt>
+            <dd><Badge>{STATUS_LABELS[match.status]}</Badge></dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">División</dt>
+            <dd className="font-medium">{match.tournament.division.label}</dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">Fecha programada</dt>
+            <dd className="font-medium">{formatDateTime(match.scheduled_at)}</dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">Estadio</dt>
+            <dd className="font-medium">{match.stadium ?? '—'}</dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">Árbitro</dt>
+            <dd className="font-medium">{match.referee ?? '—'}</dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">Marcador</dt>
+            <dd className="font-bold text-lg">{match.home_score} — {match.away_score}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <MatchImageUpload matchId={id} currentImageUrl={(match as any).image_url ?? null} />
+    </div>
+  );
+}

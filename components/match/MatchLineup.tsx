@@ -1,0 +1,54 @@
+import type { MatchLineupWithPlayer } from '@/types';
+import { formatPlayerName } from '@/lib/utils/format';
+
+interface MatchLineupProps {
+  starters: MatchLineupWithPlayer[];
+  subs: MatchLineupWithPlayer[];
+  clubName: string;
+}
+
+function PlayerRow({ lineup }: { lineup: MatchLineupWithPlayer }) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-slate-50">
+      {lineup.shirt_number != null && (
+        <span className="w-6 text-right text-xs font-bold text-slate-500">
+          {lineup.shirt_number}
+        </span>
+      )}
+      <div>
+        <span className="text-sm font-medium text-slate-800">
+          {formatPlayerName(lineup.player.first_name, lineup.player.last_name)}
+        </span>
+        {lineup.position_label && (
+          <span className="ml-2 text-xs text-slate-400">{lineup.position_label}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function MatchLineup({ starters, subs, clubName }: MatchLineupProps) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <h3 className="mb-3 font-semibold text-slate-800">{clubName}</h3>
+
+      {starters.length > 0 && (
+        <div className="mb-3">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Titulares</p>
+          {starters.map((l) => <PlayerRow key={l.id} lineup={l} />)}
+        </div>
+      )}
+
+      {subs.length > 0 && (
+        <div>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Suplentes</p>
+          {subs.map((l) => <PlayerRow key={l.id} lineup={l} />)}
+        </div>
+      )}
+
+      {starters.length === 0 && subs.length === 0 && (
+        <p className="text-sm text-slate-400">Sin alineación registrada</p>
+      )}
+    </div>
+  );
+}

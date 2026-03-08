@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(cmd:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)"
+    ]
+  }
+}
