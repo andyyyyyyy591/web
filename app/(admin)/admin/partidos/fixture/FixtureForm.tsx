@@ -13,21 +13,19 @@ interface MatchRow {
   awayClubId: string;
   scheduledAt: string;
   stadium: string;
-  zoneLabel?: string; // solo para display
+  zone: 'A' | 'B' | '';       // para formato zonas
+  roundLabel: string;          // para formato eliminatorias
 }
 
 function emptyRow(): MatchRow {
-  return { homeClubId: '', awayClubId: '', scheduledAt: '', stadium: '' };
+  return { homeClubId: '', awayClubId: '', scheduledAt: '', stadium: '', zone: '', roundLabel: '' };
 }
 
-/** Genera todos los pares únicos de un array de ids */
 function roundRobinPairs(ids: string[]): [string, string][] {
   const pairs: [string, string][] = [];
-  for (let i = 0; i < ids.length; i++) {
-    for (let j = i + 1; j < ids.length; j++) {
+  for (let i = 0; i < ids.length; i++)
+    for (let j = i + 1; j < ids.length; j++)
       pairs.push([ids[i], ids[j]]);
-    }
-  }
   return pairs;
 }
 
@@ -50,13 +48,11 @@ export function FixtureForm({ tournaments, clubs }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  // Paso 1
   const [tournamentId, setTournamentId] = useState('');
   const [fechaNumero, setFechaNumero] = useState('');
   const [fechaLabel, setFechaLabel] = useState('');
   const [matchDateId, setMatchDateId] = useState<string | null>(null);
 
-  // Paso 2
   const [rows, setRows] = useState<MatchRow[]>([emptyRow(), emptyRow()]);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
@@ -70,18 +66,14 @@ export function FixtureForm({ tournaments, clubs }: Props) {
 
   const selectedTournament = tournaments.find((t) => t.id === tournamentId);
   const tournamentFormat: TournamentFormat = (selectedTournament as any)?.format ?? 'todos_contra_todos';
-  const formatBadge = FORMAT_BADGE[tournamentFormat];
+  const badge = FORMAT_BADGE[tournamentFormat];
 
   async function handleCreateFecha(e: React.FormEvent) {
     e.preventDefault();
     if (!tournamentId || !fechaNumero) return;
     setLoading(true);
     setError(null);
-    const result = await createMatchDate(
-      tournamentId,
-      parseInt(fechaNumero),
-      fechaLabel || undefined,
-    );
+    const result = await createMatchDate(tournamentId, parseInt(fechaNumero), fechaLabel || undefined);
     setLoading(false);
     if (result.error) { setError(result.error); return; }
     setMatchDateId(result.data!.id);
@@ -89,10 +81,8 @@ export function FixtureForm({ tournaments, clubs }: Props) {
   }
 
   async function handleAutoGenerate() {
-    if (!tournamentId) return;
     setGenerating(true);
     setGenerateError(null);
-
     const tournamentClubs = await getTournamentClubsForFixture(tournamentId);
     setGenerating(false);
 
@@ -101,66 +91,46 @@ export function FixtureForm({ tournaments, clubs }: Props) {
       return;
     }
 
-    let generatedRows: MatchRow[] = [];
-
     if (tournamentFormat === 'zonas') {
-      const zoneA = tournamentClubs.filter((c) => c.zone === 'A');
-      const zoneB = tournamentClubs.filter((c) => c.zone === 'B');
-
-      if (zoneA.length < 2 && zoneB.length < 2) {
+      const a = tournamentClubs.filter((c) => c.zone === 'A');
+      const b = tournamentClubs.filter((c) => c.zone === 'B');
+      if (a.length < 2 && b.length < 2) {
         setGenerateError('Asigná los equipos a Zona A o Zona B en la gestión del torneo');
         return;
       }
-
-      const pairsA = roundRobinPairs(zoneA.map((c) => c.club_id));
-      const pairsB = roundRobinPairs(zoneB.map((c) => c.club_id));
-
-      generatedRows = [
-        ...pairsA.map(([h, a]) => ({ homeClubId: h, awayClubId: a, scheduledAt: '', stadium: '', zoneLabel: 'Zona A' })),
-        ...pairsB.map(([h, a]) => ({ homeClubId: h, awayClubId: a, scheduledAt: '', stadium: '', zoneLabel: 'Zona B' })),
+      const generated: MatchRow[] = [
+        ...roundRobinPairs(a.map((c) => c.club_id)).map(([h, aw]) => ({ ...emptyRow(), homeClubId: h, awayClubId: aw, zone: 'A' as const })),
+        ...roundRobinPairs(b.map((c) => c.club_id)).map(([h, aw]) => ({ ...emptyRow(), homeClubId: h, awayClubId: aw, zone: 'B' as const })),
       ];
+      setRows(generated.length ? generated : [emptyRow()]);
     } else {
-      // todos_contra_todos (eliminatorias se maneja manual)
       const pairs = roundRobinPairs(tournamentClubs.map((c) => c.club_id));
-      generatedRows = pairs.map(([h, a]) => ({ homeClubId: h, awayClubId: a, scheduledAt: '', stadium: '' }));
+      setRows(pairs.length ? pairs.map(([h, aw]) => ({ ...emptyRow(), homeClubId: h, awayClubId: aw })) : [emptyRow()]);
     }
-
-    if (generatedRows.length === 0) {
-      setGenerateError('No se pudieron generar cruces. Revisá los equipos registrados.');
-      return;
-    }
-
-    setRows(generatedRows);
   }
 
-  function updateRow(index: number, field: keyof MatchRow, value: string) {
-    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
+  function updateRow(i: number, field: keyof MatchRow, value: string) {
+    setRows((prev) => prev.map((r, idx) => idx === i ? { ...r, [field]: value } : r));
   }
 
-  function addRow() {
-    setRows((prev) => [...prev, emptyRow()]);
-  }
+  function addRow() { setRows((p) => [...p, emptyRow()]); }
+  function removeRow(i: number) { setRows((p) => p.filter((_, idx) => idx !== i)); }
 
-  function removeRow(index: number) {
-    setRows((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  async function handleSaveFixture(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    const validRows = rows.filter((r) => r.homeClubId && r.awayClubId && r.homeClubId !== r.awayClubId);
-    if (validRows.length === 0) {
-      setError('Completá al menos un partido con local y visitante distintos');
-      return;
-    }
+    const valid = rows.filter((r) => r.homeClubId && r.awayClubId && r.homeClubId !== r.awayClubId);
+    if (valid.length === 0) { setError('Completá al menos un partido con local y visitante distintos'); return; }
     setLoading(true);
     setError(null);
-    const payload = validRows.map((r) => ({
+    const payload = valid.map((r) => ({
       tournament_id: tournamentId,
       match_date_id: matchDateId ?? undefined,
       home_club_id: r.homeClubId,
       away_club_id: r.awayClubId,
       scheduled_at: r.scheduledAt ? new Date(r.scheduledAt).toISOString() : undefined,
       stadium: r.stadium || undefined,
+      zone: r.zone || undefined,
+      round_label: r.roundLabel || undefined,
     }));
     const result = await createMatchesBatch(payload);
     setLoading(false);
@@ -175,7 +145,7 @@ export function FixtureForm({ tournaments, clubs }: Props) {
           <p className="text-4xl">✅</p>
           <p className="font-semibold text-green-800">Fixture guardado correctamente</p>
           <p className="text-sm text-green-600">
-            {rows.filter((r) => r.homeClubId && r.awayClubId).length} partido(s) creado(s) en{' '}
+            {rows.filter((r) => r.homeClubId && r.awayClubId).length} partido(s) en{' '}
             {fechaLabel || `Fecha ${fechaNumero}`}
           </p>
           <div className="flex justify-center gap-3 pt-2">
@@ -191,9 +161,6 @@ export function FixtureForm({ tournaments, clubs }: Props) {
     );
   }
 
-  // Agrupación por zoneLabel para mostrar separadores en paso 2
-  const rowsWithZones = rows.some((r) => r.zoneLabel);
-
   return (
     <div className="max-w-3xl space-y-4">
       <div className="flex items-center gap-3">
@@ -204,9 +171,7 @@ export function FixtureForm({ tournaments, clubs }: Props) {
       {/* Paso 1 */}
       <div className={`rounded-xl border bg-white p-6 space-y-4 ${step === 2 ? 'border-green-200' : 'border-slate-200'}`}>
         <div className="flex items-center gap-3">
-          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold ${
-            step === 2 ? 'bg-green-600 text-white' : 'bg-slate-800 text-white'
-          }`}>1</span>
+          <span className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold ${step === 2 ? 'bg-green-600 text-white' : 'bg-slate-800 text-white'}`}>1</span>
           <h2 className="font-semibold text-slate-800">Torneo y fecha</h2>
           {step === 2 && (
             <span className="ml-auto text-sm text-slate-500">
@@ -236,11 +201,9 @@ export function FixtureForm({ tournaments, clubs }: Props) {
                   </optgroup>
                 ))}
               </select>
-
-              {/* Badge de formato */}
               {selectedTournament && (
-                <span className={`mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${formatBadge.color}`}>
-                  {formatBadge.label}
+                <span className={`mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.color}`}>
+                  {badge.label}
                 </span>
               )}
             </div>
@@ -249,20 +212,15 @@ export function FixtureForm({ tournaments, clubs }: Props) {
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">Número de fecha *</label>
                 <input
-                  required
-                  type="number"
-                  min="1"
-                  value={fechaNumero}
-                  onChange={(e) => setFechaNumero(e.target.value)}
-                  placeholder="1"
+                  required type="number" min="1" value={fechaNumero}
+                  onChange={(e) => setFechaNumero(e.target.value)} placeholder="1"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-700">Etiqueta (opcional)</label>
                 <input
-                  value={fechaLabel}
-                  onChange={(e) => setFechaLabel(e.target.value)}
+                  value={fechaLabel} onChange={(e) => setFechaLabel(e.target.value)}
                   placeholder="Semifinal, Fecha 5…"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
@@ -283,24 +241,16 @@ export function FixtureForm({ tournaments, clubs }: Props) {
             <div className="flex items-center gap-3">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-sm font-bold text-white">2</span>
               <h2 className="font-semibold text-slate-800">Partidos de la fecha</h2>
-              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${formatBadge.color}`}>
-                {formatBadge.label}
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.color}`}>
+                {badge.label}
               </span>
             </div>
-
-            {/* Botón auto-generar (solo para todos_contra_todos y zonas) */}
             {tournamentFormat !== 'eliminatorias' && (
               <button
-                type="button"
-                onClick={handleAutoGenerate}
-                disabled={generating}
+                type="button" onClick={handleAutoGenerate} disabled={generating}
                 className="flex items-center gap-1.5 rounded-lg border border-green-300 bg-green-50 px-3 py-1.5 text-sm font-semibold text-green-700 hover:bg-green-100 disabled:opacity-50 transition-colors"
               >
-                {generating ? (
-                  '⏳ Generando...'
-                ) : (
-                  <>⚡ Auto-generar cruces</>
-                )}
+                {generating ? '⏳ Generando...' : '⚡ Auto-generar cruces'}
               </button>
             )}
           </div>
@@ -309,44 +259,23 @@ export function FixtureForm({ tournaments, clubs }: Props) {
             <p className="rounded-lg bg-orange-50 px-3 py-2 text-sm text-orange-600">{generateError}</p>
           )}
 
-          <form onSubmit={handleSaveFixture} className="space-y-3">
+          <form onSubmit={handleSave} className="space-y-3">
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
-            <div className="grid grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 px-1">
-              <span className="col-span-4">Local</span>
-              <span className="col-span-4">Visitante</span>
-              <span className="col-span-3">Fecha y hora</span>
-              <span className="col-span-1" />
-            </div>
+            {/* Encabezado columnas */}
+            <MatchRowHeader format={tournamentFormat} />
 
-            {/* Si hay zonas, mostrar separadores */}
-            {rowsWithZones ? (
-              (() => {
-                const sections: { zone: string; rows: { row: MatchRow; index: number }[] }[] = [];
-                rows.forEach((row, index) => {
-                  const zone = row.zoneLabel ?? 'Sin zona';
-                  const existing = sections.find((s) => s.zone === zone);
-                  if (existing) existing.rows.push({ row, index });
-                  else sections.push({ zone, rows: [{ row, index }] });
-                });
-                return sections.map((section) => (
-                  <div key={section.zone} className="space-y-2">
-                    <p className="text-xs font-bold uppercase tracking-wide text-purple-600 pt-1">{section.zone}</p>
-                    {section.rows.map(({ row, index }) => (
-                      <MatchRowInput key={index} row={row} index={index} clubs={clubs} onUpdate={updateRow} onRemove={removeRow} canRemove={rows.length > 1} />
-                    ))}
-                  </div>
-                ));
-              })()
-            ) : (
-              rows.map((row, i) => (
-                <MatchRowInput key={i} row={row} index={i} clubs={clubs} onUpdate={updateRow} onRemove={removeRow} canRemove={rows.length > 1} />
-              ))
-            )}
+            {/* Filas agrupadas por zona si aplica */}
+            <MatchRowList
+              rows={rows}
+              clubs={clubs}
+              format={tournamentFormat}
+              onUpdate={updateRow}
+              onRemove={removeRow}
+            />
 
             <button
-              type="button"
-              onClick={addRow}
+              type="button" onClick={addRow}
               className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 py-2.5 text-sm text-slate-500 hover:border-green-400 hover:text-green-600 transition-colors"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -370,59 +299,180 @@ export function FixtureForm({ tournaments, clubs }: Props) {
   );
 }
 
-function MatchRowInput({ row, index, clubs, onUpdate, onRemove, canRemove }: {
+// ─── Header columnas ─────────────────────────────────────────────────────────
+
+function MatchRowHeader({ format }: { format: TournamentFormat }) {
+  if (format === 'zonas') {
+    return (
+      <div className="grid grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 px-1">
+        <span className="col-span-1">Zona</span>
+        <span className="col-span-4">Local</span>
+        <span className="col-span-4">Visitante</span>
+        <span className="col-span-2">Fecha y hora</span>
+        <span className="col-span-1" />
+      </div>
+    );
+  }
+  if (format === 'eliminatorias') {
+    return (
+      <div className="grid grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 px-1">
+        <span className="col-span-2">Cruce</span>
+        <span className="col-span-4">Local</span>
+        <span className="col-span-3">Visitante</span>
+        <span className="col-span-2">Fecha y hora</span>
+        <span className="col-span-1" />
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 px-1">
+      <span className="col-span-4">Local</span>
+      <span className="col-span-4">Visitante</span>
+      <span className="col-span-3">Fecha y hora</span>
+      <span className="col-span-1" />
+    </div>
+  );
+}
+
+// ─── Lista de filas con separadores por zona ─────────────────────────────────
+
+function MatchRowList({ rows, clubs, format, onUpdate, onRemove }: {
+  rows: MatchRow[];
+  clubs: Club[];
+  format: TournamentFormat;
+  onUpdate: (i: number, field: keyof MatchRow, val: string) => void;
+  onRemove: (i: number) => void;
+}) {
+  if (format !== 'zonas') {
+    return (
+      <>
+        {rows.map((row, i) => (
+          <MatchRowInput key={i} row={row} index={i} clubs={clubs} format={format}
+            onUpdate={onUpdate} onRemove={onRemove} canRemove={rows.length > 1} />
+        ))}
+      </>
+    );
+  }
+
+  // Agrupar por zona para mostrar separadores
+  const sections: { zone: 'A' | 'B' | ''; entries: { row: MatchRow; index: number }[] }[] = [];
+  rows.forEach((row, index) => {
+    const z = row.zone ?? '';
+    const existing = sections.find((s) => s.zone === z);
+    if (existing) existing.entries.push({ row, index });
+    else sections.push({ zone: z as any, entries: [{ row, index }] });
+  });
+
+  return (
+    <>
+      {sections.map((section) => (
+        <div key={section.zone || 'sin'} className="space-y-2">
+          {section.zone ? (
+            <p className="text-xs font-bold uppercase tracking-wide text-purple-600 pt-1">
+              Zona {section.zone}
+            </p>
+          ) : (
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-400 pt-1">Sin zona</p>
+          )}
+          {section.entries.map(({ row, index }) => (
+            <MatchRowInput key={index} row={row} index={index} clubs={clubs} format={format}
+              onUpdate={onUpdate} onRemove={onRemove} canRemove={rows.length > 1} />
+          ))}
+        </div>
+      ))}
+    </>
+  );
+}
+
+// ─── Fila individual ─────────────────────────────────────────────────────────
+
+function MatchRowInput({ row, index, clubs, format, onUpdate, onRemove, canRemove }: {
   row: MatchRow;
   index: number;
   clubs: Club[];
+  format: TournamentFormat;
   onUpdate: (i: number, field: keyof MatchRow, val: string) => void;
   onRemove: (i: number) => void;
   canRemove: boolean;
 }) {
+  const clubSelect = (field: 'homeClubId' | 'awayClubId', placeholder: string) => (
+    <select
+      value={row[field]}
+      onChange={(e) => onUpdate(index, field, e.target.value)}
+      className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+    >
+      <option value="">{placeholder}</option>
+      {clubs
+        .filter((c) => field === 'awayClubId' ? c.id !== row.homeClubId : true)
+        .map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+    </select>
+  );
+
+  const timeInput = (
+    <input
+      type="datetime-local" value={row.scheduledAt}
+      onChange={(e) => onUpdate(index, 'scheduledAt', e.target.value)}
+      className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+    />
+  );
+
+  const removeBtn = canRemove && (
+    <button type="button" onClick={() => onRemove(index)}
+      className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500">
+      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  );
+
+  if (format === 'zonas') {
+    return (
+      <div className="grid grid-cols-12 gap-2 items-center">
+        <div className="col-span-1">
+          <select
+            value={row.zone}
+            onChange={(e) => onUpdate(index, 'zone', e.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-1 py-2 text-sm font-semibold focus:border-purple-500 focus:outline-none text-center"
+          >
+            <option value="">—</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+          </select>
+        </div>
+        <div className="col-span-4">{clubSelect('homeClubId', '— Local —')}</div>
+        <div className="col-span-4">{clubSelect('awayClubId', '— Visitante —')}</div>
+        <div className="col-span-2">{timeInput}</div>
+        <div className="col-span-1 flex justify-center">{removeBtn}</div>
+      </div>
+    );
+  }
+
+  if (format === 'eliminatorias') {
+    return (
+      <div className="grid grid-cols-12 gap-2 items-center">
+        <div className="col-span-2">
+          <input
+            type="text" value={row.roundLabel}
+            onChange={(e) => onUpdate(index, 'roundLabel', e.target.value)}
+            placeholder="Final, SF1…"
+            className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
+          />
+        </div>
+        <div className="col-span-4">{clubSelect('homeClubId', '— Local —')}</div>
+        <div className="col-span-3">{clubSelect('awayClubId', '— Visitante —')}</div>
+        <div className="col-span-2">{timeInput}</div>
+        <div className="col-span-1 flex justify-center">{removeBtn}</div>
+      </div>
+    );
+  }
+
+  // todos_contra_todos
   return (
     <div className="grid grid-cols-12 gap-2 items-center">
-      <div className="col-span-4">
-        <select
-          value={row.homeClubId}
-          onChange={(e) => onUpdate(index, 'homeClubId', e.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-        >
-          <option value="">— Local —</option>
-          {clubs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-      </div>
-      <div className="col-span-4">
-        <select
-          value={row.awayClubId}
-          onChange={(e) => onUpdate(index, 'awayClubId', e.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-        >
-          <option value="">— Visitante —</option>
-          {clubs.filter((c) => c.id !== row.homeClubId).map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
-      </div>
-      <div className="col-span-3">
-        <input
-          type="datetime-local"
-          value={row.scheduledAt}
-          onChange={(e) => onUpdate(index, 'scheduledAt', e.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-        />
-      </div>
-      <div className="col-span-1 flex justify-center">
-        {canRemove && (
-          <button
-            type="button"
-            onClick={() => onRemove(index)}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
-      </div>
+      <div className="col-span-4">{clubSelect('homeClubId', '— Local —')}</div>
+      <div className="col-span-4">{clubSelect('awayClubId', '— Visitante —')}</div>
+      <div className="col-span-3">{timeInput}</div>
+      <div className="col-span-1 flex justify-center">{removeBtn}</div>
     </div>
   );
 }

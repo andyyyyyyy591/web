@@ -158,6 +158,8 @@ export interface Match {
   referee_assistant_2: string | null;
   referee_fourth: string | null;
   notes: string | null;
+  zone: string | null;
+  round_label: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -323,6 +325,8 @@ export interface CreateMatchPayload {
   referee_assistant_2?: string;
   referee_fourth?: string;
   notes?: string;
+  zone?: string;
+  round_label?: string;
 }
 
 export interface UpdateMatchPayload {
