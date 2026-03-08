@@ -8,7 +8,7 @@ import type { PlayerCardRecord } from '@/lib/queries/cards';
 import type { TournamentClubWithClub } from '@/lib/queries/tournament-clubs';
 import { MatchRow } from '@/components/partidos/MatchRow';
 
-const TABS = ['Tabla', 'Partidos', 'Equipos', 'Goleadores', 'Tarjetas'] as const;
+const TABS = ['Tabla', 'Partidos', 'Goleadores', 'Tarjetas'] as const;
 
 interface Props {
   divisionSlug: string;
@@ -157,47 +157,6 @@ export function DivisionTabs({ divisionSlug, standings, scorers, matchDates, car
                     </div>
                   </div>
                 )
-              ))}
-            </div>
-          )
-        )}
-
-        {/* ── EQUIPOS ── */}
-        {activeTab === 'Equipos' && (
-          tournamentClubs.length === 0 ? (
-            <p className="py-8 text-center text-sm text-secondary">
-              Sin equipos registrados en este torneo
-            </p>
-          ) : hasZones ? (
-            <div className="space-y-5">
-              {([{ z: 'A', clubs: clubsZoneA }, { z: 'B', clubs: clubsZoneB }]).map(({ z, clubs }) => {
-                if (clubs.length === 0) return null;
-                return (
-                  <div key={z}>
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-xs font-bold uppercase tracking-widest text-accent">Zona {z}</span>
-                      <div className="h-px flex-1 bg-border" />
-                    </div>
-                    <div className="space-y-1">
-                      {clubs.map((tc) => (
-                        <Link key={tc.id} href={`/clubes/${tc.club.slug}`}
-                          className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors border border-border">
-                          <ClubLogo url={tc.club.logo_url} name={tc.club.name} size={36} />
-                          <span className="text-sm font-semibold text-primary">{tc.club.name}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}</div>
-          ) : (
-            <div className="space-y-1">
-              {tournamentClubs.map((tc) => (
-                <Link key={tc.id} href={`/clubes/${tc.club.slug}`}
-                  className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors border border-border">
-                  <ClubLogo url={tc.club.logo_url} name={tc.club.name} size={36} />
-                  <span className="text-sm font-semibold text-primary">{tc.club.name}</span>
-                </Link>
               ))}
             </div>
           )
