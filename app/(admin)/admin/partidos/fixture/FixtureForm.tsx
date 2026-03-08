@@ -306,8 +306,9 @@ function MatchRowHeader({ format }: { format: TournamentFormat }) {
     return (
       <div className="grid grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 px-1">
         <span className="col-span-1">Zona</span>
-        <span className="col-span-4">Local</span>
-        <span className="col-span-4">Visitante</span>
+        <span className="col-span-3">Local</span>
+        <span className="col-span-3">Visitante</span>
+        <span className="col-span-2">Estadio</span>
         <span className="col-span-2">Fecha y hora</span>
         <span className="col-span-1" />
       </div>
@@ -317,18 +318,20 @@ function MatchRowHeader({ format }: { format: TournamentFormat }) {
     return (
       <div className="grid grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 px-1">
         <span className="col-span-2">Cruce</span>
-        <span className="col-span-4">Local</span>
+        <span className="col-span-3">Local</span>
         <span className="col-span-3">Visitante</span>
-        <span className="col-span-2">Fecha y hora</span>
+        <span className="col-span-2">Estadio</span>
+        <span className="col-span-1">Hora</span>
         <span className="col-span-1" />
       </div>
     );
   }
   return (
     <div className="grid grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 px-1">
-      <span className="col-span-4">Local</span>
-      <span className="col-span-4">Visitante</span>
-      <span className="col-span-3">Fecha y hora</span>
+      <span className="col-span-3">Local</span>
+      <span className="col-span-3">Visitante</span>
+      <span className="col-span-3">Estadio</span>
+      <span className="col-span-2">Fecha y hora</span>
       <span className="col-span-1" />
     </div>
   );
@@ -408,6 +411,15 @@ function MatchRowInput({ row, index, clubs, format, onUpdate, onRemove, canRemov
     </select>
   );
 
+  const stadiumInput = (
+    <input
+      type="text" value={row.stadium}
+      onChange={(e) => onUpdate(index, 'stadium', e.target.value)}
+      placeholder="Estadio…"
+      className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none"
+    />
+  );
+
   const timeInput = (
     <input
       type="datetime-local" value={row.scheduledAt}
@@ -439,8 +451,9 @@ function MatchRowInput({ row, index, clubs, format, onUpdate, onRemove, canRemov
             <option value="B">B</option>
           </select>
         </div>
-        <div className="col-span-4">{clubSelect('homeClubId', '— Local —')}</div>
-        <div className="col-span-4">{clubSelect('awayClubId', '— Visitante —')}</div>
+        <div className="col-span-3">{clubSelect('homeClubId', '— Local —')}</div>
+        <div className="col-span-3">{clubSelect('awayClubId', '— Visitante —')}</div>
+        <div className="col-span-2">{stadiumInput}</div>
         <div className="col-span-2">{timeInput}</div>
         <div className="col-span-1 flex justify-center">{removeBtn}</div>
       </div>
@@ -458,9 +471,10 @@ function MatchRowInput({ row, index, clubs, format, onUpdate, onRemove, canRemov
             className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
           />
         </div>
-        <div className="col-span-4">{clubSelect('homeClubId', '— Local —')}</div>
+        <div className="col-span-3">{clubSelect('homeClubId', '— Local —')}</div>
         <div className="col-span-3">{clubSelect('awayClubId', '— Visitante —')}</div>
-        <div className="col-span-2">{timeInput}</div>
+        <div className="col-span-2">{stadiumInput}</div>
+        <div className="col-span-1">{timeInput}</div>
         <div className="col-span-1 flex justify-center">{removeBtn}</div>
       </div>
     );
@@ -469,9 +483,10 @@ function MatchRowInput({ row, index, clubs, format, onUpdate, onRemove, canRemov
   // todos_contra_todos
   return (
     <div className="grid grid-cols-12 gap-2 items-center">
-      <div className="col-span-4">{clubSelect('homeClubId', '— Local —')}</div>
-      <div className="col-span-4">{clubSelect('awayClubId', '— Visitante —')}</div>
-      <div className="col-span-3">{timeInput}</div>
+      <div className="col-span-3">{clubSelect('homeClubId', '— Local —')}</div>
+      <div className="col-span-3">{clubSelect('awayClubId', '— Visitante —')}</div>
+      <div className="col-span-3">{stadiumInput}</div>
+      <div className="col-span-2">{timeInput}</div>
       <div className="col-span-1 flex justify-center">{removeBtn}</div>
     </div>
   );

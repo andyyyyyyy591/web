@@ -6,6 +6,7 @@ import { formatDateTime } from '@/lib/utils/format';
 import { Badge } from '@/components/ui/Badge';
 import { BackButton } from '@/components/ui/BackButton';
 import { MatchImageUpload } from './MatchImageUpload';
+import { MatchEditForm } from './MatchEditForm';
 import { requireSuperAdmin } from '@/lib/utils/admin-guard';
 
 interface Props {
@@ -65,6 +66,19 @@ export default async function AdminMatchPage({ params }: Props) {
           </div>
         </dl>
       </div>
+
+      <MatchEditForm
+        matchId={id}
+        initialValues={{
+          scheduled_at: match.scheduled_at,
+          stadium: match.stadium,
+          referee: match.referee,
+          referee_assistant_1: match.referee_assistant_1,
+          referee_assistant_2: match.referee_assistant_2,
+          referee_fourth: match.referee_fourth,
+          notes: match.notes,
+        }}
+      />
 
       <MatchImageUpload matchId={id} currentImageUrl={(match as any).image_url ?? null} />
     </div>
