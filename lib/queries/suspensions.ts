@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
 
 export interface SuspendedPlayer {
   player_id: string;
@@ -41,9 +40,8 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
     .eq('tournament_id', tournamentId)
     .eq('status', 'finished');
 
-  // 2. Load manual suspensions for this tournament (use admin client — bypasses RLS)
-  const admin = createAdminClient();
-  const { data: manualRows } = await admin
+  // 2. Load manual suspensions for this tournament (public read policy, regular client OK)
+  const { data: manualRows } = await supabase
     .from('player_suspensions')
     .select(`
       id, player_id, reason, card_match_date, suspended_for_date, notes,
@@ -216,8 +214,8 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
 }
 
 export async function getManualSuspensions(tournamentId: string) {
-  const admin = createAdminClient();
-  const { data, error } = await admin
+  const supabase = await createClient();
+  const { data, error } = await supabase
     .from('player_suspensions')
     .select(`
       id, player_id, reason, card_match_date, suspended_for_date, notes, created_at,
