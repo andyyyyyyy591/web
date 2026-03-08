@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export interface SuspendedPlayer {
   player_id: string;
@@ -9,9 +10,12 @@ export interface SuspendedPlayer {
   club_name: string;
   club_logo: string | null;
   reason: string;
-  card_match_date: number;       // fecha en que recibió la tarjeta
-  suspended_for_date: number;    // fecha en que está suspendido
-  served: boolean;               // si ya jugó después de la tarjeta
+  card_match_date: number | null;   // fecha en que recibió la tarjeta
+  suspended_for_date: number;       // fecha en que está suspendido
+  served: boolean;
+  /** If this came from a manual entry, its DB id (for edit/delete) */
+  manual_id?: string;
+  notes?: string | null;
 }
 
 export interface PlayerCards {
@@ -37,7 +41,41 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
     .eq('tournament_id', tournamentId)
     .eq('status', 'finished');
 
-  if (!matches?.length) return [];
+  // 2. Load manual suspensions for this tournament (use admin client — bypasses RLS)
+  const admin = createAdminClient();
+  const { data: manualRows } = await admin
+    .from('player_suspensions')
+    .select(`
+      id, player_id, reason, card_match_date, suspended_for_date, notes,
+      player:players(first_name, last_name, photo_url, club_id, club:clubs(name, logo_url))
+    `)
+    .eq('tournament_id', tournamentId);
+
+  // Build manual suspensions list
+  const manualSuspensions: SuspendedPlayer[] = [];
+  for (const row of manualRows ?? []) {
+    const player = (row.player as any) ?? {};
+    const club = player.club ?? {};
+    manualSuspensions.push({
+      player_id: row.player_id,
+      first_name: player.first_name ?? '',
+      last_name: player.last_name ?? '',
+      photo_url: player.photo_url ?? null,
+      club_id: player.club_id ?? '',
+      club_name: club.name ?? '',
+      club_logo: club.logo_url ?? null,
+      reason: row.reason,
+      card_match_date: row.card_match_date ?? null,
+      suspended_for_date: row.suspended_for_date,
+      served: false,
+      manual_id: row.id,
+      notes: row.notes,
+    });
+  }
+
+  if (!matches?.length) {
+    return manualSuspensions.sort((a, b) => a.suspended_for_date - b.suspended_for_date);
+  }
 
   const finishedIds = matches.map((m) => m.id);
 
@@ -48,7 +86,7 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
     if (num !== undefined) matchDateMap.set(m.id, num);
   }
 
-  // 2. Get all cards from finished matches
+  // 3. Get all cards from finished matches
   const { data: cardEvents } = await supabase
     .from('match_events')
     .select(`
@@ -60,9 +98,7 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
     .in('type', ['yellow_card', 'second_yellow', 'red_card'])
     .not('player_id', 'is', null);
 
-  if (!cardEvents?.length) return [];
-
-  // 3. Get all lineups to know if a player played in a match after suspension
+  // 4. Get all lineups to know if a player played after suspension
   const { data: lineups } = await supabase
     .from('match_lineups')
     .select('player_id, match_id')
@@ -79,29 +115,35 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
     playerMatchDates.get(lineup.player_id)!.add(dateNum);
   }
 
-  // 4. Calculate current max match_date number
-  const maxDateNum = Math.max(...Array.from(matchDateMap.values()), 0);
+  const computedSuspensions: SuspendedPlayer[] = [];
 
-  const suspensions: SuspendedPlayer[] = [];
+  // Build a key set of manual overrides: "playerId-cardMatchDate" → manual suspended_for_date
+  // Manual entries with card_match_date override the computed suspended_for_date
+  const manualOverrideKeys = new Set(
+    manualSuspensions
+      .filter((m) => m.card_match_date !== null)
+      .map((m) => `${m.player_id}-${m.card_match_date}`)
+  );
 
   // 5. Process red cards and second yellows (1-match ban each)
-  for (const event of cardEvents) {
+  for (const event of cardEvents ?? []) {
     if (event.type !== 'red_card' && event.type !== 'second_yellow') continue;
     if (!event.player_id || !event.player) continue;
 
     const cardDateNum = matchDateMap.get(event.match_id);
     if (cardDateNum === undefined) continue;
 
+    // Skip if there's a manual override for this card
+    if (manualOverrideKeys.has(`${event.player_id}-${cardDateNum}`)) continue;
+
     const suspendedForDate = cardDateNum + 1;
     const playerDates = playerMatchDates.get(event.player_id) ?? new Set();
-    const served = playerDates.has(suspendedForDate) || playerDates.size > 0 && Math.min(...playerDates) > suspendedForDate;
-    // Served if player played in suspendedForDate or later
     const actuallyServed = [...playerDates].some((d) => d >= suspendedForDate);
 
     const player = event.player as any;
     const club = event.club as any;
 
-    suspensions.push({
+    computedSuspensions.push({
       player_id: event.player_id,
       first_name: player.first_name,
       last_name: player.last_name,
@@ -117,9 +159,9 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
   }
 
   // 6. Process yellow card accumulations (every 5 = 1 ban)
-  // Group yellows by player, ordered by match_date
-  const yellowsByPlayer = new Map<string, Array<{ match_id: string; dateNum: number; event: typeof cardEvents[0] }>>();
-  for (const event of cardEvents) {
+  type CardEvent = NonNullable<typeof cardEvents>[number];
+  const yellowsByPlayer = new Map<string, Array<{ match_id: string; dateNum: number; event: CardEvent }>>();
+  for (const event of cardEvents ?? []) {
     if (event.type !== 'yellow_card') continue;
     if (!event.player_id) continue;
     const dateNum = matchDateMap.get(event.match_id);
@@ -133,14 +175,17 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
     const player = yellows[0].event.player as any;
     const club = yellows[0].event.club as any;
 
-    // Check each threshold (5, 10, 15...)
     for (let threshold = 5; threshold <= yellows.length; threshold += 5) {
       const triggerEvent = yellows[threshold - 1];
-      const suspendedForDate = triggerEvent.dateNum + 1;
+      const cardDateNum = triggerEvent.dateNum;
+
+      if (manualOverrideKeys.has(`${playerId}-${cardDateNum}`)) continue;
+
+      const suspendedForDate = cardDateNum + 1;
       const playerDates = playerMatchDates.get(playerId) ?? new Set();
       const actuallyServed = [...playerDates].some((d) => d >= suspendedForDate);
 
-      suspensions.push({
+      computedSuspensions.push({
         player_id: playerId,
         first_name: player.first_name,
         last_name: player.last_name,
@@ -149,18 +194,39 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
         club_name: club.name,
         club_logo: club.logo_url,
         reason: `Acumulación de amarillas (${threshold})`,
-        card_match_date: triggerEvent.dateNum,
+        card_match_date: cardDateNum,
         suspended_for_date: suspendedForDate,
         served: actuallyServed,
       });
     }
   }
 
-  // Sort: pending first, then by suspended_for_date desc
-  return suspensions.sort((a, b) => {
+  // Mark served status for manual suspensions now that we have playerMatchDates
+  for (const ms of manualSuspensions) {
+    const playerDates = playerMatchDates.get(ms.player_id) ?? new Set();
+    ms.served = [...playerDates].some((d) => d >= ms.suspended_for_date);
+  }
+
+  const all = [...computedSuspensions, ...manualSuspensions];
+
+  return all.sort((a, b) => {
     if (a.served !== b.served) return a.served ? 1 : -1;
     return b.suspended_for_date - a.suspended_for_date;
   });
+}
+
+export async function getManualSuspensions(tournamentId: string) {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from('player_suspensions')
+    .select(`
+      id, player_id, reason, card_match_date, suspended_for_date, notes, created_at,
+      player:players(first_name, last_name, photo_url, club_id, club:clubs(name))
+    `)
+    .eq('tournament_id', tournamentId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data ?? [];
 }
 
 export async function getPlayerCards(tournamentId: string): Promise<PlayerCards[]> {
