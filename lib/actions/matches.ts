@@ -49,7 +49,9 @@ export async function updateMatchStatus(
   const update: Record<string, unknown> = { status, ...extra };
   if (tsField) update[tsField] = new Date().toISOString();
 
-  const { error } = await supabase.from('matches').update(update).eq('id', id);
+  // Use admin client so team_admin role can also update match status
+  const admin = createAdminClient();
+  const { error } = await admin.from('matches').update(update).eq('id', id);
   if (error) return { error: error.message };
 
   // Auto-recalculate standings when match finishes

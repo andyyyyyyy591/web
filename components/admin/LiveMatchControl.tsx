@@ -56,6 +56,8 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
   const [transitioning, setTransitioning] = useState<string | null>(null);
   const [transitionError, setTransitionError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'event' | 'lineup' | 'timeline'>('lineup');
+  const [addedTime1, setAddedTime1] = useState('');   // tiempo adicional 1T
+  const [addedTime2, setAddedTime2] = useState('');   // tiempo adicional 2T
 
   const isSuperAdmin = role === 'admin';
   const live = isLive(match.status);
@@ -67,7 +69,10 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
   async function handleTransition(to: MatchStatus) {
     setTransitioning(to);
     setTransitionError(null);
-    const result = await updateMatchStatus(match.id, to);
+    const extra: { first_half_added_time?: number; second_half_added_time?: number } = {};
+    if (to === 'halftime' && addedTime1) extra.first_half_added_time = parseInt(addedTime1);
+    if ((to === 'finished' || to === 'extra_time_first') && addedTime2) extra.second_half_added_time = parseInt(addedTime2);
+    const result = await updateMatchStatus(match.id, to, Object.keys(extra).length ? extra : undefined);
     if (result.error) setTransitionError(result.error);
     setTransitioning(null);
   }
@@ -118,10 +123,43 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
 
       {/* Control de estado — admin y team admin */}
       {available.length > 0 && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
           {transitionError && (
-            <p className="mb-3 text-sm text-red-600">{transitionError}</p>
+            <p className="text-sm text-red-600">{transitionError}</p>
           )}
+
+          {/* Input tiempo adicional 1T — solo cuando el partido está en primer tiempo */}
+          {match.status === 'first_half' && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-slate-500 whitespace-nowrap">+ min 1T</label>
+              <input
+                type="number"
+                min="0" max="20"
+                value={addedTime1}
+                onChange={(e) => setAddedTime1(e.target.value)}
+                placeholder="0"
+                className="w-16 rounded-lg border border-slate-300 px-2 py-1.5 text-center text-sm focus:border-yellow-500 focus:outline-none"
+              />
+              <span className="text-xs text-slate-400">minutos adicionales al finalizar el tiempo</span>
+            </div>
+          )}
+
+          {/* Input tiempo adicional 2T — cuando está en segundo tiempo */}
+          {match.status === 'second_half' && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-slate-500 whitespace-nowrap">+ min 2T</label>
+              <input
+                type="number"
+                min="0" max="20"
+                value={addedTime2}
+                onChange={(e) => setAddedTime2(e.target.value)}
+                placeholder="0"
+                className="w-16 rounded-lg border border-slate-300 px-2 py-1.5 text-center text-sm focus:border-yellow-500 focus:outline-none"
+              />
+              <span className="text-xs text-slate-400">minutos adicionales al finalizar el tiempo</span>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2">
             {available.map((t) => (
               <button
@@ -204,7 +242,7 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
       )}
 
       {activeTab === 'event' && (
-        (match.status === 'scheduled' && !isSuperAdmin) ? (
+        match.status === 'scheduled' ? (
           <div className="rounded-2xl border border-dashed border-slate-300 py-10 text-center text-sm text-slate-400">
             El partido aún no ha comenzado
           </div>
