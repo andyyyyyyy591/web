@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { CreateMatchPayload, UpdateMatchPayload, MatchStatus } from '@/types';
 
 export async function createMatch(payload: CreateMatchPayload) {
@@ -50,6 +51,18 @@ export async function updateMatchStatus(
 
   const { error } = await supabase.from('matches').update(update).eq('id', id);
   if (error) return { error: error.message };
+
+  // Auto-recalculate standings when match finishes
+  if (status === 'finished') {
+    const { data: matchData } = await supabase
+      .from('matches').select('tournament_id').eq('id', id).single();
+    if (matchData?.tournament_id) {
+      const admin = createAdminClient();
+      await admin.rpc('recalculate_tournament_standings', {
+        p_tournament_id: matchData.tournament_id,
+      });
+    }
+  }
 
   revalidatePath(`/admin/partidos/${id}/live`);
   return { success: true };

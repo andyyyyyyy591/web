@@ -190,6 +190,7 @@ export interface Standing {
   id: string;
   tournament_id: string;
   club_id: string;
+  zone: string | null;             // 'A' | 'B' | null
   played: number;
   won: number;
   drawn: number;
@@ -199,6 +200,14 @@ export interface Standing {
   goal_difference: number;         // columna generada en DB
   points: number;
   updated_at: string;
+}
+
+export interface TournamentClub {
+  id: string;
+  tournament_id: string;
+  club_id: string;
+  zone: string | null;
+  created_at: string;
 }
 
 // ────────────────────────────────────────────────

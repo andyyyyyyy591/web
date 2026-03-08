@@ -20,6 +20,7 @@ export default async function AdminDashboard() {
     { label: 'Jugadores', value: players.length, href: '/admin/jugadores', color: 'bg-green-50 text-green-700', icon: '👟' },
     { label: 'Noticias', value: news.length, href: '/admin/noticias', color: 'bg-orange-50 text-orange-700', icon: '📰' },
     { label: 'En vivo', value: liveMatches.length, href: '/admin/partidos', color: 'bg-red-50 text-red-700', icon: '🔴' },
+    { label: 'Torneos', value: 0, href: '/admin/torneos', color: 'bg-purple-50 text-purple-700', icon: '🏆' },
   ];
 
   const quickLinks = [

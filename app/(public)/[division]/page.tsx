@@ -4,6 +4,7 @@ import { getStandingsByTournament } from '@/lib/queries/standings';
 import { getTopScorersByTournament } from '@/lib/queries/players';
 import { getMatchesByTournament } from '@/lib/queries/matches';
 import { getCardsByTournament } from '@/lib/queries/cards';
+import { getClubsByTournament } from '@/lib/queries/tournament-clubs';
 import { DivisionTabs } from './DivisionTabs';
 
 interface Props {
@@ -26,11 +27,12 @@ export default async function DivisionPage({ params }: Props) {
     );
   }
 
-  const [standings, scorers, matchDates, cards] = await Promise.all([
+  const [standings, scorers, matchDates, cards, tournamentClubs] = await Promise.all([
     getStandingsByTournament(tournament.id),
     getTopScorersByTournament(tournament.id),
     getMatchesByTournament(tournament.id),
     getCardsByTournament(tournament.id),
+    getClubsByTournament(tournament.id),
   ]);
 
   return (
@@ -47,6 +49,7 @@ export default async function DivisionPage({ params }: Props) {
         scorers={scorers}
         matchDates={matchDates}
         cards={cards}
+        tournamentClubs={tournamentClubs}
       />
     </div>
   );
