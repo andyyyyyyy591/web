@@ -78,10 +78,29 @@ export async function getMatchesByTournament(tournamentId: string): Promise<Matc
     .order('scheduled_at');
   if (matchesError) throw new Error(matchesError.message);
 
-  return (dates ?? []).map((date) => ({
+  const allMatches = (matches ?? []) as MatchWithClubs[];
+  const dateGroups = (dates ?? []).map((date) => ({
     ...date,
-    matches: (matches ?? []).filter((m) => m.match_date_id === date.id) as MatchWithClubs[],
+    matches: allMatches.filter((m) => m.match_date_id === date.id),
   }));
+
+  // Partidos sin fecha asignada — los agrupamos aparte
+  const assignedIds = new Set((dates ?? []).map((d) => d.id));
+  const unassigned = allMatches.filter(
+    (m) => !m.match_date_id || !assignedIds.has(m.match_date_id),
+  );
+  if (unassigned.length > 0) {
+    dateGroups.push({
+      id: '__unassigned__',
+      tournament_id: tournamentId,
+      number: 0,
+      label: 'Sin fecha asignada',
+      date: null,
+      matches: unassigned,
+    } as any);
+  }
+
+  return dateGroups;
 }
 
 export async function getUpcomingMatches(limit = 6): Promise<MatchWithClubs[]> {

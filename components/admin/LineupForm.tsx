@@ -12,7 +12,7 @@ interface Props {
   existingLineup: MatchLineupWithPlayer[];
 }
 
-const POSITIONS = ['', 'POR', 'DFC', 'LD', 'LI', 'MCD', 'MC', 'MCO', 'EXT D', 'EXT I', 'SD', 'DEL'];
+const POSITIONS = ['', 'ARQ', 'DFC', 'LD', 'LI', 'MCD', 'MC', 'MCO', 'MI', 'MD', 'SD', 'DC', 'DEL'];
 
 export function LineupForm({ matchId, clubId, clubName, players, existingLineup }: Props) {
   type Entry = { selected: boolean; is_starter: boolean; shirt_number: string; position_label: string };

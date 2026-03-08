@@ -4,7 +4,10 @@
       "Bash(npm run:*)",
       "Bash(cmd:*)",
       "Bash(ls:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(xargs grep:*)",
+      "Bash(cat:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
