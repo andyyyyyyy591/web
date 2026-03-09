@@ -97,6 +97,7 @@ const allLinks: NavLink[] = [
   { href: '/admin/clubes',     label: 'Clubes',      icon: <IconClub /> },
   { href: '/admin/jugadores',  label: 'Jugadores',   icon: <IconPlayer /> },
   { href: '/admin/noticias',   label: 'Noticias',    icon: <IconNews /> },
+  { href: '/admin/torneos',    label: 'Torneos',     icon: <IconSeason />, onlyAdmin: true },
   { href: '/admin/temporadas', label: 'Temporadas',  icon: <IconSeason />, onlyAdmin: true },
   { href: '/admin/usuarios',   label: 'Usuarios',    icon: <IconUsers />,  onlyAdmin: true },
 ];
