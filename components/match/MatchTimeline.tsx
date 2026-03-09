@@ -7,32 +7,86 @@ interface MatchTimelineProps {
   events: MatchEventWithPlayers[];
   homeClubId: string;
   status?: MatchStatus;
+  firstHalfAddedTime?: number;
+  secondHalfAddedTime?: number;
 }
 
 type TimelineItem =
   | { kind: 'event'; event: MatchEventWithPlayers }
-  | { kind: 'divider'; label: string; variant?: 'final' };
+  | { kind: 'divider'; label: string; variant?: 'start' | 'added' | 'final' };
 
-function buildTimeline(events: MatchEventWithPlayers[], status?: MatchStatus): TimelineItem[] {
+const STATUS_ORDER: MatchStatus[] = [
+  'first_half', 'halftime', 'second_half',
+  'extra_time_first', 'extra_time_break', 'extra_time_second',
+  'penalties', 'finished',
+];
+
+function atOrPast(status: MatchStatus | undefined, target: MatchStatus): boolean {
+  if (!status) return false;
+  return STATUS_ORDER.indexOf(status) >= STATUS_ORDER.indexOf(target);
+}
+
+function buildTimeline(
+  events: MatchEventWithPlayers[],
+  status?: MatchStatus,
+  firstHalfAddedTime = 0,
+  secondHalfAddedTime = 0,
+): TimelineItem[] {
+  if (!status || !atOrPast(status, 'first_half')) return [];
+
   const items: TimelineItem[] = [];
-  let lastPeriod: string | null = null;
 
-  for (const event of events) {
-    const period = event.period;
+  // Inicio del partido
+  items.push({ kind: 'divider', label: 'Inicio del partido', variant: 'start' });
 
-    if (lastPeriod !== null && period !== lastPeriod) {
-      if (period === 'second_half' && lastPeriod === 'first_half') {
-        items.push({ kind: 'divider', label: 'ET' });
-      } else if (period === 'penalties') {
-        items.push({ kind: 'divider', label: 'Penales' });
-      }
-    }
-    lastPeriod = period;
-    items.push({ kind: 'event', event });
+  // First half events
+  for (const evt of events.filter((e) => e.period === 'first_half')) {
+    items.push({ kind: 'event', event: evt });
   }
 
-  if (status === 'finished') {
-    items.push({ kind: 'divider', label: 'Fin del partido', variant: 'final' });
+  if (atOrPast(status, 'halftime')) {
+    // Added time 1T
+    if (firstHalfAddedTime > 0) {
+      items.push({ kind: 'divider', label: `+${firstHalfAddedTime}'`, variant: 'added' });
+    }
+    // ET (Entretiempo)
+    items.push({ kind: 'divider', label: 'ET' });
+  }
+
+  if (atOrPast(status, 'second_half')) {
+    // Second half events
+    for (const evt of events.filter((e) => e.period === 'second_half')) {
+      items.push({ kind: 'event', event: evt });
+    }
+
+    // Extra time (if any, rare but supported)
+    const extraEvents = events.filter(
+      (e) => e.period === 'extra_time_first' || e.period === 'extra_time_second',
+    );
+    if (extraEvents.length > 0) {
+      items.push({ kind: 'divider', label: 'Prórroga' });
+      for (const evt of extraEvents) items.push({ kind: 'event', event: evt });
+    }
+
+    // Added time 2T — shows once match has ended regulation or gone to penalties
+    const secondHalfEnded =
+      STATUS_ORDER.indexOf(status) > STATUS_ORDER.indexOf('second_half');
+    if (secondHalfEnded && secondHalfAddedTime > 0) {
+      items.push({ kind: 'divider', label: `+${secondHalfAddedTime}'`, variant: 'added' });
+    }
+
+    // Penalty phase
+    const penaltyEvents = events.filter((e) => e.period === 'penalties');
+    const showPenalties = status === 'penalties' || penaltyEvents.length > 0;
+    if (showPenalties) {
+      items.push({ kind: 'divider', label: 'Penales' });
+      for (const evt of penaltyEvents) items.push({ kind: 'event', event: evt });
+    }
+
+    // Fin del partido
+    if (status === 'finished') {
+      items.push({ kind: 'divider', label: 'Fin del partido', variant: 'final' });
+    }
   }
 
   return items;
@@ -48,12 +102,23 @@ function EventIcon({ type }: { type: string }) {
   return null;
 }
 
-function PeriodDivider({ label, variant }: { label: string; variant?: 'final' }) {
+function PeriodDivider({ label, variant }: { label: string; variant?: 'start' | 'added' | 'final' }) {
+  const isStart = variant === 'start';
+  const isAdded = variant === 'added';
   const isFinal = variant === 'final';
+
+  const labelClass = isFinal
+    ? 'text-secondary'
+    : isAdded
+    ? 'text-secondary'
+    : isStart
+    ? 'text-green-600 dark:text-green-400'
+    : 'text-accent';
+
   return (
     <div className="flex items-center gap-3 px-3 py-3">
-      <div className={`h-px flex-1 ${isFinal ? 'bg-border' : 'bg-border'}`} />
-      <span className={`text-[10px] font-bold uppercase tracking-widest ${isFinal ? 'text-secondary' : 'text-accent'}`}>
+      <div className="h-px flex-1 bg-border" />
+      <span className={`text-[10px] font-bold uppercase tracking-widest ${labelClass}`}>
         {isFinal ? '🏁 ' : ''}{label}
       </span>
       <div className="h-px flex-1 bg-border" />
@@ -61,12 +126,18 @@ function PeriodDivider({ label, variant }: { label: string; variant?: 'final' })
   );
 }
 
-export function MatchTimeline({ events, homeClubId, status }: MatchTimelineProps) {
-  if (events.length === 0) {
-    return <p className="py-8 text-center text-sm text-secondary">Sin eventos registrados</p>;
-  }
+export function MatchTimeline({
+  events,
+  homeClubId,
+  status,
+  firstHalfAddedTime = 0,
+  secondHalfAddedTime = 0,
+}: MatchTimelineProps) {
+  const items = buildTimeline(events, status, firstHalfAddedTime, secondHalfAddedTime);
 
-  const items = buildTimeline(events, status);
+  if (items.length === 0) {
+    return <p className="py-8 text-center text-sm text-secondary">El partido no ha comenzado</p>;
+  }
 
   return (
     <div className="space-y-1 py-2">

@@ -217,13 +217,13 @@ export function MatchTabs({ match, homePosition, awayPosition, homeSuspended, aw
         )}
 
         {activeTab === 'Directo' && (
-          match.events.length === 0 ? (
-            <p className="py-8 text-center text-sm text-secondary">
-              {live ? 'Esperando eventos del partido...' : 'El partido no ha comenzado'}
-            </p>
-          ) : (
-            <MatchTimeline events={match.events} homeClubId={match.home_club_id} status={match.status} />
-          )
+          <MatchTimeline
+            events={match.events}
+            homeClubId={match.home_club_id}
+            status={match.status}
+            firstHalfAddedTime={match.first_half_added_time}
+            secondHalfAddedTime={match.second_half_added_time}
+          />
         )}
       </div>
     </div>

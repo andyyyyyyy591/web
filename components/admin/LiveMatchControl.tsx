@@ -5,7 +5,6 @@ import { useRealtimeMatch } from '@/hooks/useRealtimeMatch';
 import { useRealtimeEvents } from '@/hooks/useRealtimeEvents';
 import { EventForm } from '@/components/admin/EventForm';
 import { LineupForm } from '@/components/admin/LineupForm';
-import { MatchTimeline } from '@/components/match/MatchTimeline';
 import { LiveClock } from '@/components/match/LiveClock';
 import { deleteMatchEvent } from '@/lib/actions/events';
 import { updateMatchStatus } from '@/lib/actions/matches';
@@ -40,6 +39,7 @@ const TRANSITIONS: Array<{
   { from: ['halftime'],                             to: 'second_half',       label: '▶ 2° Tiempo',          color: 'green' },
   { from: ['second_half'],                          to: 'extra_time_first',  label: '⏱ Tiempo extra',       color: 'yellow' },
   { from: ['second_half', 'extra_time_second'],     to: 'finished',          label: '⏹ Finalizar',          color: 'red' },
+  { from: ['penalties'],                            to: 'finished',          label: '⏹ Finalizar',          color: 'red' },
   { from: ['extra_time_first'],                     to: 'extra_time_break',  label: '⏸ Descanso T.E.',     color: 'yellow' },
   { from: ['extra_time_break'],                     to: 'extra_time_second', label: '▶ T.E. 2°',           color: 'green' },
   { from: ['extra_time_second'],                    to: 'penalties',         label: '🎯 Penales',           color: 'blue' },
@@ -189,6 +189,21 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
         />
       )}
 
+      {/* Opción penales — cruce eliminatorio empatado, sin penales registrados aún */}
+      {match.status === 'finished' &&
+        initialMatch.tournament.format === 'eliminatorias' &&
+        match.home_score === match.away_score &&
+        !events.some((e) => e.period === 'penalties') && (
+          <TieCrucesPanel
+            homeClub={initialMatch.home_club}
+            awayClub={initialMatch.away_club}
+            homeScore={match.home_score}
+            awayScore={match.away_score}
+            onGoToPenalties={() => handleTransition('penalties')}
+            transitioning={transitioning !== null}
+          />
+        )}
+
       {/* Aviso team admin */}
       {!isSuperAdmin && teamAdminClub && (
         <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
@@ -309,6 +324,39 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function TieCrucesPanel({ homeClub, awayClub, homeScore, awayScore, onGoToPenalties, transitioning }: {
+  homeClub: Club;
+  awayClub: Club;
+  homeScore: number;
+  awayScore: number;
+  onGoToPenalties: () => void;
+  transitioning: boolean;
+}) {
+  return (
+    <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-4 space-y-3">
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">⚖️</span>
+        <div>
+          <p className="text-sm font-bold text-amber-900">Empate en cruce eliminatorio</p>
+          <p className="text-xs text-amber-700">
+            {homeClub.short_name ?? homeClub.name} {homeScore} – {awayScore} {awayClub.short_name ?? awayClub.name}
+          </p>
+        </div>
+      </div>
+      <p className="text-xs text-amber-700">
+        ¿El ganador se define por tanda de penales?
+      </p>
+      <button
+        onClick={onGoToPenalties}
+        disabled={transitioning}
+        className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+      >
+        {transitioning ? 'Cargando...' : '🎯 Ir a tanda de penales'}
+      </button>
     </div>
   );
 }
