@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { saveLineup, type LineupEntry } from '@/lib/actions/lineups';
-import type { Player, MatchLineupWithPlayer } from '@/types';
+import { saveMatchCoachingStaff } from '@/lib/actions/coaching-staff';
+import type { Player, MatchLineupWithPlayer, CoachingStaff } from '@/types';
 
 interface Props {
   matchId: string;
@@ -11,11 +12,13 @@ interface Props {
   players: Player[];
   existingLineup: MatchLineupWithPlayer[];
   suspendedPlayerIds?: string[];
+  coachingStaff?: CoachingStaff[];
+  existingStaffIds?: string[];
 }
 
 const POSITIONS = ['', 'ARQ', 'DFC', 'LD', 'LI', 'MCD', 'MC', 'MCO', 'MI', 'MD', 'SD', 'DC', 'DEL'];
 
-export function LineupForm({ matchId, clubId, clubName, players, existingLineup, suspendedPlayerIds = [] }: Props) {
+export function LineupForm({ matchId, clubId, clubName, players, existingLineup, suspendedPlayerIds = [], coachingStaff = [], existingStaffIds = [] }: Props) {
   type Entry = { selected: boolean; is_starter: boolean; shirt_number: string; position_label: string };
 
   const [entries, setEntries] = useState<Record<string, Entry>>(() => {
@@ -39,6 +42,7 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup,
     return map;
   });
 
+  const [selectedStaff, setSelectedStaff] = useState<Set<string>>(() => new Set(existingStaffIds));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,9 +73,14 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup,
         position_label: entries[p.id].position_label || null,
       }));
 
-    const result = await saveLineup(matchId, clubId, lineupEntries);
+    const [lineupResult] = await Promise.all([
+      saveLineup(matchId, clubId, lineupEntries),
+      coachingStaff.length > 0
+        ? saveMatchCoachingStaff(matchId, clubId, Array.from(selectedStaff))
+        : Promise.resolve({ success: true }),
+    ]);
     setSaving(false);
-    if (result.error) setError(result.error);
+    if (lineupResult.error) setError(lineupResult.error);
     else setMessage('Alineación guardada.');
   }
 
@@ -174,6 +183,40 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup,
                 </button>
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Cuerpo técnico */}
+      {coachingStaff.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+            Cuerpo técnico
+          </p>
+          <div className="space-y-1">
+            {coachingStaff.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setSelectedStaff((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(s.id)) next.delete(s.id);
+                  else next.add(s.id);
+                  return next;
+                })}
+                className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+                  selectedStaff.has(s.id)
+                    ? 'border-green-400 bg-green-50 text-slate-800'
+                    : 'border-slate-200 text-slate-500 hover:border-green-300 hover:text-slate-700'
+                }`}
+              >
+                <span className={`h-4 w-4 flex-shrink-0 rounded border ${selectedStaff.has(s.id) ? 'border-green-500 bg-green-500' : 'border-slate-300'}`}>
+                  {selectedStaff.has(s.id) && <svg viewBox="0 0 12 12" fill="white"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>}
+                </span>
+                <span className="flex-1 font-medium">{s.last_name} {s.first_name}</span>
+                <span className="text-xs text-slate-400">{s.role}</span>
+              </button>
+            ))}
           </div>
         </div>
       )}

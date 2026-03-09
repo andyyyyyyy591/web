@@ -1,4 +1,4 @@
-import type { MatchLineupWithPlayer } from '@/types';
+import type { MatchLineupWithPlayer, CoachingStaff } from '@/types';
 import { formatPlayerName } from '@/lib/utils/format';
 
 interface SuspendedEntry {
@@ -12,6 +12,7 @@ interface MatchLineupProps {
   subs: MatchLineupWithPlayer[];
   clubName: string;
   suspended?: SuspendedEntry[];
+  staff?: CoachingStaff[];
 }
 
 function PlayerRow({ lineup }: { lineup: MatchLineupWithPlayer }) {
@@ -34,7 +35,7 @@ function PlayerRow({ lineup }: { lineup: MatchLineupWithPlayer }) {
   );
 }
 
-export function MatchLineup({ starters, subs, clubName, suspended }: MatchLineupProps) {
+export function MatchLineup({ starters, subs, clubName, suspended, staff }: MatchLineupProps) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
       <h3 className="mb-3 font-semibold text-slate-800">{clubName}</h3>
@@ -65,7 +66,20 @@ export function MatchLineup({ starters, subs, clubName, suspended }: MatchLineup
         </div>
       )}
 
-      {starters.length === 0 && subs.length === 0 && !suspended?.length && (
+      {staff && staff.length > 0 && (
+        <div className="border-t border-slate-100 pt-3">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Cuerpo técnico</p>
+          {staff.map((s) => (
+            <div key={s.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5">
+              <span className="text-xs">👨‍💼</span>
+              <span className="flex-1 text-sm text-slate-700">{s.last_name} {s.first_name}</span>
+              <span className="text-xs text-slate-400">{s.role}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {starters.length === 0 && subs.length === 0 && !suspended?.length && !staff?.length && (
         <p className="text-sm text-slate-400">Sin alineación registrada</p>
       )}
     </div>

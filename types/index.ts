@@ -91,6 +91,17 @@ export interface Division {
   created_at: string;
 }
 
+export interface CoachingStaff {
+  id: string;
+  club_id: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  photo_url: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface Player {
   id: string;
   club_id: string;

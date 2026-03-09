@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getMatchById } from '@/lib/queries/matches';
 import { getStandingsByTournament } from '@/lib/queries/standings';
 import { getSuspendedPlayers } from '@/lib/queries/suspensions';
+import { getMatchCoachingStaff } from '@/lib/queries/coaching-staff';
 import { MatchTabs } from './MatchTabs';
 import { RealtimeMatchWrapper } from './RealtimeMatchWrapper';
 
@@ -14,9 +15,10 @@ export default async function MatchPage({ params }: Props) {
   const match = await getMatchById(id);
   if (!match) notFound();
 
-  const [standings, allSuspended] = await Promise.all([
+  const [standings, allSuspended, matchStaff] = await Promise.all([
     getStandingsByTournament(match.tournament_id).catch(() => []),
     getSuspendedPlayers(match.tournament_id).catch(() => []),
+    getMatchCoachingStaff(id).catch(() => []),
   ]);
 
   const homeIdx = standings.findIndex((s) => s.club_id === match.home_club_id);
@@ -42,6 +44,7 @@ export default async function MatchPage({ params }: Props) {
         awayPosition={awayPosition}
         homeSuspended={homeSuspended}
         awaySuspended={awaySuspended}
+        matchStaff={matchStaff}
       />
     );
   }
@@ -53,6 +56,7 @@ export default async function MatchPage({ params }: Props) {
       awayPosition={awayPosition}
       homeSuspended={homeSuspended}
       awaySuspended={awaySuspended}
+      matchStaff={matchStaff}
     />
   );
 }

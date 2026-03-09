@@ -8,6 +8,7 @@ import { Formation } from '@/components/match/Formation';
 import { MatchLineup } from '@/components/match/MatchLineup';
 import { LiveClock } from '@/components/match/LiveClock';
 import { isLive, STATUS_LABELS } from '@/types';
+import type { MatchStaffEntry } from '@/lib/queries/coaching-staff';
 
 const TABS = ['Previa', 'Alineación', 'Directo'] as const;
 
@@ -53,9 +54,12 @@ interface Props {
   awayPosition?: number;
   homeSuspended?: SuspendedEntry[];
   awaySuspended?: SuspendedEntry[];
+  matchStaff?: MatchStaffEntry[];
 }
 
-export function MatchTabs({ match, homePosition, awayPosition, homeSuspended, awaySuspended }: Props) {
+export function MatchTabs({ match, homePosition, awayPosition, homeSuspended, awaySuspended, matchStaff }: Props) {
+  const homeStaff = matchStaff?.filter((s) => s.club_id === match.home_club_id).map((s) => s.staff);
+  const awayStaff = matchStaff?.filter((s) => s.club_id === match.away_club_id).map((s) => s.staff);
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Previa');
   const live = isLive(match.status);
   const finished = match.status === 'finished';
@@ -198,12 +202,14 @@ export function MatchTabs({ match, homePosition, awayPosition, homeSuspended, aw
                   subs={match.home_subs}
                   clubName={match.home_club.name}
                   suspended={homeSuspended}
+                  staff={homeStaff}
                 />
                 <MatchLineup
                   starters={match.away_starters}
                   subs={match.away_subs}
                   clubName={match.away_club.name}
                   suspended={awaySuspended}
+                  staff={awayStaff}
                 />
               </div>
             </div>

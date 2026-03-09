@@ -4,6 +4,7 @@ import { useRealtimeMatch } from '@/hooks/useRealtimeMatch';
 import { useRealtimeEvents } from '@/hooks/useRealtimeEvents';
 import { MatchTabs } from './MatchTabs';
 import type { MatchDetail } from '@/types';
+import type { MatchStaffEntry } from '@/lib/queries/coaching-staff';
 
 interface SuspendedEntry {
   player_id: string;
@@ -17,9 +18,10 @@ interface RealtimeMatchWrapperProps {
   awayPosition?: number;
   homeSuspended?: SuspendedEntry[];
   awaySuspended?: SuspendedEntry[];
+  matchStaff?: MatchStaffEntry[];
 }
 
-export function RealtimeMatchWrapper({ initialMatch, homePosition, awayPosition, homeSuspended, awaySuspended }: RealtimeMatchWrapperProps) {
+export function RealtimeMatchWrapper({ initialMatch, homePosition, awayPosition, homeSuspended, awaySuspended, matchStaff }: RealtimeMatchWrapperProps) {
   const match = useRealtimeMatch(initialMatch);
   const events = useRealtimeEvents(initialMatch.id, initialMatch.events);
 
@@ -29,5 +31,5 @@ export function RealtimeMatchWrapper({ initialMatch, homePosition, awayPosition,
     events,
   };
 
-  return <MatchTabs match={enrichedMatch} homePosition={homePosition} awayPosition={awayPosition} homeSuspended={homeSuspended} awaySuspended={awaySuspended} />;
+  return <MatchTabs match={enrichedMatch} homePosition={homePosition} awayPosition={awayPosition} homeSuspended={homeSuspended} awaySuspended={awaySuspended} matchStaff={matchStaff} />;
 }

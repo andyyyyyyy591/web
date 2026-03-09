@@ -4,6 +4,7 @@ import { getMatchById } from '@/lib/queries/matches';
 import { getPlayersByClub, getAllPlayers } from '@/lib/queries/players';
 import { getClubs } from '@/lib/queries/clubs';
 import { getSuspendedPlayers } from '@/lib/queries/suspensions';
+import { getCoachingStaffByClub, getMatchStaffIds } from '@/lib/queries/coaching-staff';
 import { LiveMatchControl } from '@/components/admin/LiveMatchControl';
 import { getAdminRole, getAdminClubId } from '@/lib/utils/auth';
 
@@ -22,9 +23,13 @@ export default async function LiveControlPage({ params }: Props) {
   const match = await getMatchById(id);
   if (!match) notFound();
 
-  const [allClubs, allSuspended] = await Promise.all([
+  const [allClubs, allSuspended, homeStaff, awayStaff, homeStaffIds, awayStaffIds] = await Promise.all([
     getClubs(),
     getSuspendedPlayers(match.tournament_id).catch(() => []),
+    getCoachingStaffByClub(match.home_club_id),
+    getCoachingStaffByClub(match.away_club_id),
+    getMatchStaffIds(id, match.home_club_id),
+    getMatchStaffIds(id, match.away_club_id),
   ]);
 
   const suspendedPlayerIds = allSuspended
@@ -65,6 +70,10 @@ export default async function LiveControlPage({ params }: Props) {
         role={role}
         userClubId={userClubId}
         suspendedPlayerIds={suspendedPlayerIds}
+        homeCoachingStaff={homeStaff}
+        awayCoachingStaff={awayStaff}
+        homeExistingStaffIds={homeStaffIds}
+        awayExistingStaffIds={awayStaffIds}
       />
     </div>
   );

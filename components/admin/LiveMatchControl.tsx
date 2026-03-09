@@ -9,7 +9,7 @@ import { MatchTimeline } from '@/components/match/MatchTimeline';
 import { LiveClock } from '@/components/match/LiveClock';
 import { deleteMatchEvent } from '@/lib/actions/events';
 import { updateMatchStatus } from '@/lib/actions/matches';
-import type { MatchDetail, Club, Player, MatchStatus } from '@/types';
+import type { MatchDetail, Club, Player, MatchStatus, CoachingStaff } from '@/types';
 import { STATUS_LABELS, isLive } from '@/types';
 import type { AdminRole } from '@/types';
 import Image from 'next/image';
@@ -22,6 +22,10 @@ interface LiveMatchControlProps {
   /** Club del team admin (si aplica) */
   userClubId?: string | null;
   suspendedPlayerIds?: string[];
+  homeCoachingStaff?: CoachingStaff[];
+  awayCoachingStaff?: CoachingStaff[];
+  homeExistingStaffIds?: string[];
+  awayExistingStaffIds?: string[];
 }
 
 // Transiciones de estado
@@ -51,7 +55,7 @@ function btnColor(color: string) {
   return map[color] ?? map.green;
 }
 
-export function LiveMatchControl({ initialMatch, clubs, players, role, userClubId, suspendedPlayerIds = [] }: LiveMatchControlProps) {
+export function LiveMatchControl({ initialMatch, clubs, players, role, userClubId, suspendedPlayerIds = [], homeCoachingStaff = [], awayCoachingStaff = [], homeExistingStaffIds = [], awayExistingStaffIds = [] }: LiveMatchControlProps) {
   const match = useRealtimeMatch(initialMatch);
   const events = useRealtimeEvents(initialMatch.id, initialMatch.events);
   const [transitioning, setTransitioning] = useState<string | null>(null);
@@ -235,6 +239,9 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
                 ...initialMatch.away_starters,
                 ...initialMatch.away_subs,
               ].filter((l) => l.club_id === club.id);
+              const isHome = club.id === initialMatch.home_club_id;
+              const clubStaff = isHome ? homeCoachingStaff : awayCoachingStaff;
+              const clubStaffIds = isHome ? homeExistingStaffIds : awayExistingStaffIds;
               return (
                 <div key={club.id} className="rounded-2xl border border-slate-200 bg-white p-4">
                   <LineupForm
@@ -244,6 +251,8 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
                     players={clubPlayers}
                     existingLineup={existingLineup}
                     suspendedPlayerIds={suspendedPlayerIds}
+                    coachingStaff={clubStaff}
+                    existingStaffIds={clubStaffIds}
                   />
                 </div>
               );
