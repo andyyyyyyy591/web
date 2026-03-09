@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { DateBar } from '@/components/partidos/DateBar';
 import { MatchRow } from '@/components/partidos/MatchRow';
 import type { MatchWithClubs } from '@/types';
-import { isLive } from '@/types';
 
 function todayStr() {
   const d = new Date();
@@ -52,27 +51,38 @@ export default function PartidosPage() {
     }
   }
 
+  async function fetchLiveMatches() {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/matches?live=true');
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setMatches(data);
+    } catch {
+      setMatches([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
-    fetchMatches(selectedDate);
-  }, [selectedDate]);
+    if (liveMode) fetchLiveMatches();
+    else fetchMatches(selectedDate);
+  }, [selectedDate, liveMode]);
 
   // Auto-refresh every 30s in live mode
   useEffect(() => {
     if (!liveMode) return;
-    const id = setInterval(() => fetchMatches(selectedDate), 30_000);
+    const id = setInterval(() => fetchLiveMatches(), 30_000);
     return () => clearInterval(id);
-  }, [liveMode, selectedDate]);
+  }, [liveMode]);
 
   function handleLiveMode() {
-    const today = todayStr();
     setLiveMode(true);
-    setSelectedDate(today);
-    fetchMatches(today);
+    fetchLiveMatches();
   }
 
-  const displayMatches = liveMode
-    ? matches.filter((m) => isLive(m.status))
-    : matches;
+  const displayMatches = matches;
 
   const groups = groupByDivision(displayMatches);
 

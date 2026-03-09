@@ -149,6 +149,17 @@ export async function getMatchesByClub(clubId: string): Promise<MatchWithClubs[]
   return data as MatchWithClubs[];
 }
 
+export async function getLiveMatchesWithClubs(): Promise<MatchWithClubs[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('matches')
+    .select(MATCH_WITH_CLUBS_SELECT)
+    .in('status', ['first_half', 'halftime', 'second_half', 'extra_time_first', 'extra_time_break', 'extra_time_second', 'penalties'])
+    .order('scheduled_at');
+  if (error) throw new Error(error.message);
+  return data as MatchWithClubs[];
+}
+
 export async function getMatchesByDate(date: string): Promise<MatchWithClubs[]> {
   const supabase = await createClient();
   // date format: YYYY-MM-DD

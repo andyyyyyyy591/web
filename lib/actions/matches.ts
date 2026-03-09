@@ -59,14 +59,17 @@ export async function updateMatchStatus(
     const { data: matchData } = await supabase
       .from('matches').select('tournament_id').eq('id', id).single();
     if (matchData?.tournament_id) {
-      const admin = createAdminClient();
-      await admin.rpc('recalculate_tournament_standings', {
+      // SECURITY DEFINER function — works with regular client too, but admin bypasses RLS
+      const { error: rpcErr } = await admin.rpc('recalculate_tournament_standings', {
         p_tournament_id: matchData.tournament_id,
       });
+      if (rpcErr) console.error('standings rpc error:', rpcErr.message);
     }
   }
 
   revalidatePath(`/admin/partidos/${id}/live`);
+  revalidatePath('/admin/partidos');
+  revalidatePath('/');
   return { success: true };
 }
 
@@ -85,12 +88,15 @@ export async function finalizePenalties(matchId: string, winnerClubId: string) {
   const { data: matchData } = await supabase
     .from('matches').select('tournament_id').eq('id', matchId).single();
   if (matchData?.tournament_id) {
-    await admin.rpc('recalculate_tournament_standings', {
+    const { error: rpcErr } = await admin.rpc('recalculate_tournament_standings', {
       p_tournament_id: matchData.tournament_id,
     });
+    if (rpcErr) console.error('standings rpc error:', rpcErr.message);
   }
 
   revalidatePath(`/admin/partidos/${matchId}/live`);
+  revalidatePath('/admin/partidos');
+  revalidatePath('/');
   return { success: true };
 }
 
@@ -123,6 +129,26 @@ export async function createMatchesBatch(matches: CreateMatchPayload[]) {
     .insert(matches)
     .select();
   if (error) return { error: error.message };
+
+  // Auto-registrar clubes en tournament_clubs según la zona del partido
+  // (zona_a → zone='A', zona_b → zone='B'; interzonales no tocan zonas ya asignadas)
+  const clubZones = new Map<string, { tournament_id: string; club_id: string; zone: string }>();
+  for (const m of matches) {
+    const zone = m.match_zone === 'zona_a' ? 'A' : m.match_zone === 'zona_b' ? 'B' : null;
+    if (zone && m.tournament_id && m.home_club_id && m.away_club_id) {
+      for (const clubId of [m.home_club_id, m.away_club_id]) {
+        clubZones.set(`${m.tournament_id}-${clubId}`, { tournament_id: m.tournament_id, club_id: clubId, zone });
+      }
+    }
+  }
+  if (clubZones.size > 0) {
+    const admin = createAdminClient();
+    await admin.from('tournament_clubs').upsert(
+      Array.from(clubZones.values()),
+      { onConflict: 'tournament_id,club_id' },
+    );
+  }
+
   revalidatePath('/admin/partidos');
   return { data, count: data.length };
 }
