@@ -9,7 +9,7 @@ import {
   removeClubFromTournament,
   updateClubZone,
 } from '@/lib/actions/tournament-clubs';
-import { updateTournamentFormat } from '@/lib/actions/tournaments';
+import { updateTournamentFormat, syncAndRecalculateStandings } from '@/lib/actions/tournaments';
 
 const FORMAT_OPTIONS: { value: TournamentFormat; label: string; desc: string }[] = [
   { value: 'todos_contra_todos', label: 'Todos contra todos', desc: 'Una tabla, todos los equipos juegan entre sí' },
@@ -34,6 +34,8 @@ export function TournamentClubsForm({ tournamentId, allClubs, registered, format
   const [error, setError] = useState<string | null>(null);
   const [selectedClubId, setSelectedClubId] = useState('');
   const [selectedZone, setSelectedZone] = useState<'A' | 'B' | ''>('');
+  const [recalcState, setRecalcState] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [recalcMsg, setRecalcMsg] = useState('');
 
   const hasZones = format === 'zonas';
 
@@ -89,6 +91,19 @@ export function TournamentClubsForm({ tournamentId, allClubs, registered, format
     setItems((prev) => prev.map((i) => i.id === tc.id ? { ...i, zone: zone || null } : i));
   }
 
+  async function handleRecalc() {
+    setRecalcState('loading');
+    setRecalcMsg('');
+    const result = await syncAndRecalculateStandings(tournamentId);
+    if (result.error) {
+      setRecalcState('error');
+      setRecalcMsg(result.error);
+    } else {
+      setRecalcState('ok');
+      setRecalcMsg(`Tabla recalculada. ${result.clubsRegistered ?? 0} equipo(s) sincronizados.`);
+    }
+  }
+
   const grouped = hasZones
     ? {
         A: items.filter((i) => i.zone === 'A'),
@@ -128,6 +143,29 @@ export function TournamentClubsForm({ tournamentId, allClubs, registered, format
       </div>
 
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+
+      {/* Recalcular tabla */}
+      <div className="rounded-xl border border-slate-200 bg-white p-4 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-sm font-semibold text-slate-800">Recalcular tabla de posiciones</p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Sincroniza los equipos desde los partidos cargados y regenera la tabla.
+            Usalo si la tabla aparece vacía después de finalizar partidos.
+          </p>
+          {recalcMsg && (
+            <p className={`text-xs mt-1 font-medium ${recalcState === 'ok' ? 'text-green-600' : 'text-red-600'}`}>
+              {recalcMsg}
+            </p>
+          )}
+        </div>
+        <button
+          onClick={handleRecalc}
+          disabled={recalcState === 'loading'}
+          className="flex-shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        >
+          {recalcState === 'loading' ? 'Recalculando...' : '⟳ Recalcular tabla'}
+        </button>
+      </div>
 
       {/* Add club form */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
