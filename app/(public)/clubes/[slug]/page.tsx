@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { getClubBySlug, getClubTrophies, getClubTransfers, getNewsByClub } from '@/lib/queries/clubs';
-import { getPlayersByClub, getPlayersByClubInPrimera } from '@/lib/queries/players';
+import { getPlayersByClubWithDivision } from '@/lib/queries/players';
 import { getMatchesByClub } from '@/lib/queries/matches';
 import { getActiveTournamentByDivision } from '@/lib/queries/divisions';
 import { getDivisions } from '@/lib/queries/divisions';
@@ -18,12 +18,12 @@ export default async function ClubPage({ params }: Props) {
   const club = await getClubBySlug(slug);
   if (!club) notFound();
 
-  const [matches, trophies, transfers, news, primeraPlayers, divisions] = await Promise.all([
+  const [matches, trophies, transfers, news, allPlayers, divisions] = await Promise.all([
     getMatchesByClub(club.id),
     getClubTrophies(club.id),
     getClubTransfers(club.id),
     getNewsByClub(club.name),
-    getPlayersByClubInPrimera(club.id),
+    getPlayersByClubWithDivision(club.id),
     getDivisions(),
   ]);
 
@@ -89,7 +89,8 @@ export default async function ClubPage({ params }: Props) {
         transfers={transfers}
         trophies={trophies}
         news={news}
-        players={primeraPlayers}
+        players={allPlayers}
+        divisions={divisions}
       />
     </div>
   );

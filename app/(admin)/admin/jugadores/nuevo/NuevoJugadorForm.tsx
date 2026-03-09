@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPlayer } from '@/lib/actions/players';
-import type { PlayerPosition, Club } from '@/types';
+import type { PlayerPosition, Club, Division } from '@/types';
 import { POSITION_LABELS } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { BackButton } from '@/components/ui/BackButton';
 
-export function NuevoJugadorForm({ clubs, lockedClubId }: { clubs: Club[]; lockedClubId?: string }) {
+export function NuevoJugadorForm({ clubs, lockedClubId, divisions }: { clubs: Club[]; lockedClubId?: string; divisions: Division[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export function NuevoJugadorForm({ clubs, lockedClubId }: { clubs: Club[]; locke
   const [nationality, setNationality] = useState('Argentina');
   const [photoUrl, setPhotoUrl] = useState('');
   const [jerseyNumber, setJerseyNumber] = useState('');
-  const [playsInPrimera, setPlaysInPrimera] = useState(false);
+  const [primaryDivisionId, setPrimaryDivisionId] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,7 +37,7 @@ export function NuevoJugadorForm({ clubs, lockedClubId }: { clubs: Club[]; locke
       nationality,
       photo_url: photoUrl || undefined,
       jersey_number: jerseyNumber ? parseInt(jerseyNumber) : undefined,
-      plays_in_primera: playsInPrimera,
+      primary_division_id: primaryDivisionId || null,
     });
     setLoading(false);
     if (result.error) setError(result.error);
@@ -130,14 +130,18 @@ export function NuevoJugadorForm({ clubs, lockedClubId }: { clubs: Club[]; locke
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500" />
         </div>
 
-        <div className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5">
-          <input type="checkbox" id="plays_primera_new" checked={playsInPrimera}
-            onChange={(e) => setPlaysInPrimera(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-green-600 focus:ring-green-500" />
-          <label htmlFor="plays_primera_new" className="text-sm font-medium text-slate-700 cursor-pointer">
-            Juega en Primera
-          </label>
-          <span className="text-xs text-slate-400">(aparece en el plantel del club)</span>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Categoría principal</label>
+          <select
+            value={primaryDivisionId}
+            onChange={(e) => setPrimaryDivisionId(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+          >
+            <option value="">— Sin categoría asignada —</option>
+            {divisions.map((d) => (
+              <option key={d.id} value={d.id}>{d.label}</option>
+            ))}
+          </select>
         </div>
 
         <div className="flex gap-3 pt-2">

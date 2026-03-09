@@ -3,13 +3,12 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import type { StandingWithClub, MatchWithClubs, News } from '@/types';
+import type { StandingWithClub, MatchWithClubs, News, Division } from '@/types';
 import type { Trophy, TransferWithPlayer } from '@/types';
-import type { Player } from '@/types';
-import { POSITION_LABELS } from '@/types';
+import type { PlayerWithDivision } from '@/lib/queries/players';
 import { MatchRow } from '@/components/partidos/MatchRow';
 
-const TABS = ['Resumen', 'Partidos', 'Tabla', 'Fichajes', 'Noticias', 'Trofeos'] as const;
+const TABS = ['Resumen', 'Plantel', 'Partidos', 'Tabla', 'Fichajes', 'Noticias', 'Trofeos'] as const;
 
 function formatDate(dt: string) {
   return new Date(dt).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -22,11 +21,24 @@ interface Props {
   transfers: TransferWithPlayer[];
   trophies: Trophy[];
   news: News[];
-  players: Player[];
+  players: PlayerWithDivision[];
+  divisions: Division[];
 }
 
-export function ClubTabs({ clubId, matches, standings, transfers, trophies, news, players }: Props) {
+export function ClubTabs({ clubId, matches, standings, transfers, trophies, news, players, divisions }: Props) {
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Resumen');
+
+  // Determine which divisions have players for this club
+  const divisionsWithPlayers = divisions.filter((d) =>
+    players.some((p) => p.primary_division_id === d.id),
+  );
+  // Default to primera (or first division with players)
+  const primeraDiv = divisions.find((d) => d.slug === 'primera');
+  const defaultDivisionId =
+    (primeraDiv && divisionsWithPlayers.some((d) => d.id === primeraDiv.id)
+      ? primeraDiv.id
+      : divisionsWithPlayers[0]?.id) ?? '';
+  const [activeDivisionId, setActiveDivisionId] = useState(defaultDivisionId);
 
   const upcoming = matches.filter((m) => m.status === 'scheduled').slice(0, 3);
   const recent = matches.filter((m) => m.status === 'finished').slice(0, 5);
@@ -94,12 +106,15 @@ export function ClubTabs({ clubId, matches, standings, transfers, trophies, news
               </div>
             )}
 
-            {/* Players with plays_in_primera */}
-            {players.length > 0 && (
+            {/* Quick plantel preview (primera only) */}
+            {players.filter((p) => p.primary_division_id === primeraDiv?.id).length > 0 && (
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">Plantel — Primera</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-secondary">Plantel — Primera</p>
+                  <button onClick={() => setActiveTab('Plantel')} className="text-[10px] font-semibold text-accent">Ver todo →</button>
+                </div>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {players.map((p) => (
+                  {players.filter((p) => p.primary_division_id === primeraDiv?.id).slice(0, 6).map((p) => (
                     <Link key={p.id} href={`/jugadores/${p.id}`}
                       className="flex items-center gap-2 rounded-xl bg-card px-3 py-2.5 hover:bg-elevated transition-colors">
                       {p.photo_url ? (
@@ -120,6 +135,66 @@ export function ClubTabs({ clubId, matches, standings, transfers, trophies, news
                   ))}
                 </div>
               </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'Plantel' && (
+          <div className="space-y-4">
+            {players.length === 0 ? (
+              <p className="py-8 text-center text-sm text-secondary">Sin jugadores registrados</p>
+            ) : (
+              <>
+                {/* Division selector */}
+                {divisionsWithPlayers.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                    {divisionsWithPlayers.map((d) => (
+                      <button
+                        key={d.id}
+                        onClick={() => setActiveDivisionId(d.id)}
+                        className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition-colors ${
+                          activeDivisionId === d.id
+                            ? 'bg-accent text-white'
+                            : 'bg-elevated text-secondary hover:text-primary'
+                        }`}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Player grid */}
+                {(() => {
+                  const divPlayers = players.filter((p) => p.primary_division_id === activeDivisionId);
+                  if (divPlayers.length === 0) {
+                    return <p className="py-6 text-center text-sm text-secondary">Sin jugadores en esta categoría</p>;
+                  }
+                  return (
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {divPlayers.map((p) => (
+                        <Link key={p.id} href={`/jugadores/${p.id}`}
+                          className="flex items-center gap-2 rounded-xl bg-card px-3 py-2.5 hover:bg-elevated transition-colors">
+                          {p.photo_url ? (
+                            <Image src={p.photo_url} alt={p.first_name} width={32} height={32}
+                              className="h-8 w-8 rounded-full object-cover flex-shrink-0" />
+                          ) : (
+                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-elevated text-[10px] font-bold text-secondary">
+                              {p.first_name[0]}{p.last_name[0]}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-primary truncate">{p.last_name} {p.first_name}</p>
+                            {p.jersey_number != null && (
+                              <p className="text-[10px] text-secondary">#{p.jersey_number}</p>
+                            )}
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </>
             )}
           </div>
         )}

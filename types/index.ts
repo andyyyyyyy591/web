@@ -102,6 +102,7 @@ export interface Player {
   nationality: string;
   jersey_number: number | null;
   plays_in_primera: boolean;
+  primary_division_id: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -386,6 +387,7 @@ export interface CreatePlayerPayload {
   nationality?: string;
   jersey_number?: number;
   plays_in_primera?: boolean;
+  primary_division_id?: string | null;
 }
 
 export interface UpdatePlayerPayload {
@@ -397,6 +399,7 @@ export interface UpdatePlayerPayload {
   nationality?: string;
   jersey_number?: number;
   plays_in_primera?: boolean;
+  primary_division_id?: string | null;
   is_active?: boolean;
 }
 

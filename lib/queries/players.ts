@@ -60,6 +60,26 @@ export async function getPlayersByClubInPrimera(clubId: string): Promise<Player[
   return data;
 }
 
+export interface PlayerWithDivision extends Player {
+  primary_division_label: string | null;
+  primary_division_slug: string | null;
+}
+
+export async function getPlayersByClubWithDivision(clubId: string): Promise<PlayerWithDivision[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('players')
+    .select('*, primary_division:divisions(label, slug)')
+    .eq('club_id', clubId)
+    .eq('is_active', true)
+    .order('last_name');
+  return (data ?? []).map((p: any) => ({
+    ...p,
+    primary_division_label: p.primary_division?.label ?? null,
+    primary_division_slug: p.primary_division?.slug ?? null,
+  }));
+}
+
 export async function getPlayerMatchHistory(playerId: string): Promise<MatchWithClubs[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

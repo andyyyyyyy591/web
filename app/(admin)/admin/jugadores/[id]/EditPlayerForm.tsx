@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updatePlayer } from '@/lib/actions/players';
-import type { PlayerPosition, PlayerWithClub } from '@/types';
+import type { PlayerPosition, PlayerWithClub, Division } from '@/types';
 import { POSITION_LABELS } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { BackButton } from '@/components/ui/BackButton';
 
-export function EditPlayerForm({ player }: { player: PlayerWithClub }) {
+export function EditPlayerForm({ player, divisions }: { player: PlayerWithClub; divisions: Division[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export function EditPlayerForm({ player }: { player: PlayerWithClub }) {
   const [nationality, setNationality] = useState(player.nationality);
   const [photoUrl, setPhotoUrl] = useState(player.photo_url ?? '');
   const [jerseyNumber, setJerseyNumber] = useState(player.jersey_number?.toString() ?? '');
-  const [playsInPrimera, setPlaysInPrimera] = useState(player.plays_in_primera ?? false);
+  const [primaryDivisionId, setPrimaryDivisionId] = useState(player.primary_division_id ?? '');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,7 +35,7 @@ export function EditPlayerForm({ player }: { player: PlayerWithClub }) {
       nationality,
       photo_url: photoUrl || undefined,
       jersey_number: jerseyNumber ? parseInt(jerseyNumber) : undefined,
-      plays_in_primera: playsInPrimera,
+      primary_division_id: primaryDivisionId || null,
     });
     setLoading(false);
     if (result.error) setError(result.error);
@@ -105,14 +105,18 @@ export function EditPlayerForm({ player }: { player: PlayerWithClub }) {
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500" />
         </div>
 
-        <div className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2.5">
-          <input type="checkbox" id="plays_primera" checked={playsInPrimera}
-            onChange={(e) => setPlaysInPrimera(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-green-600 focus:ring-green-500" />
-          <label htmlFor="plays_primera" className="text-sm font-medium text-slate-700 cursor-pointer">
-            Juega en Primera
-          </label>
-          <span className="text-xs text-slate-400">(aparece en el plantel del club)</span>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Categoría principal</label>
+          <select
+            value={primaryDivisionId}
+            onChange={(e) => setPrimaryDivisionId(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+          >
+            <option value="">— Sin categoría asignada —</option>
+            {divisions.map((d) => (
+              <option key={d.id} value={d.id}>{d.label}</option>
+            ))}
+          </select>
         </div>
 
         <div className="flex gap-3 pt-2">
