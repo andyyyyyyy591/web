@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getMatchById } from '@/lib/queries/matches';
+import { getTournamentClubsForFixture } from '@/lib/actions/tournaments';
 import { STATUS_LABELS } from '@/types';
 import { formatDateTime } from '@/lib/utils/format';
 import { Badge } from '@/components/ui/Badge';
@@ -20,6 +21,9 @@ export default async function AdminMatchPage({ params }: Props) {
   if (!match) notFound();
 
   const hasLive = match.tournament.division.has_live_mode;
+
+  const tournamentClubs = await getTournamentClubsForFixture(match.tournament.id);
+  const clubs = tournamentClubs.map((tc) => ({ id: tc.club_id, name: tc.club_name }));
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -69,7 +73,12 @@ export default async function AdminMatchPage({ params }: Props) {
 
       <MatchEditForm
         matchId={id}
+        clubs={clubs}
         initialValues={{
+          home_club_id: match.home_club_id as string,
+          away_club_id: match.away_club_id as string,
+          home_score: match.home_score ?? null,
+          away_score: match.away_score ?? null,
           scheduled_at: match.scheduled_at,
           stadium: match.stadium,
           referee: match.referee,
@@ -77,6 +86,8 @@ export default async function AdminMatchPage({ params }: Props) {
           referee_assistant_2: match.referee_assistant_2,
           referee_fourth: match.referee_fourth,
           notes: match.notes,
+          zone: (match as any).zone ?? null,
+          round_label: (match as any).round_label ?? null,
         }}
       />
 

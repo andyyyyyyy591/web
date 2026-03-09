@@ -9,10 +9,8 @@ import { BackButton } from '@/components/ui/BackButton';
 import type { TournamentWithRelations, Club, TournamentFormat } from '@/types';
 
 const RONDAS = [
-  'Octavos de final',
   'Cuartos de final',
-  'Semifinal 1',
-  'Semifinal 2',
+  'Semifinal',
   'Final',
   'Otro…',
 ];
@@ -45,13 +43,12 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
   const [refereeAssistant2, setRefereeAssistant2] = useState('');
   const [refereeFourth, setRefereeFourth] = useState('');
 
-  // Formato
-  const [zone, setZone] = useState<'A' | 'B' | ''>('');
+  // Ronda (para zonas y eliminatorias)
   const [rondaSelect, setRondaSelect] = useState('');
   const [rondaCustom, setRondaCustom] = useState('');
 
-  // Clubes del torneo (para filtrar por zona si aplica)
-  const [tournamentClubs, setTournamentClubs] = useState<{ club_id: string; zone: string | null }[]>([]);
+  // Clubes del torneo
+  const [tournamentClubs, setTournamentClubs] = useState<{ club_id: string; club_name: string; zone: string | null }[]>([]);
 
   const bySeasonId = tournaments.reduce<Record<string, TournamentWithRelations[]>>((acc, t) => {
     const key = t.season.id;
@@ -68,7 +65,7 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
     setTournamentId(id);
     setHomeClubId('');
     setAwayClubId('');
-    setZone('');
+    setRondaSelect('');
     if (id) {
       const tc = await getTournamentClubsForFixture(id);
       setTournamentClubs(tc);
@@ -77,15 +74,16 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
     }
   }
 
-  // Clubes disponibles: si es zonas y hay zona seleccionada, filtrar por zona
-  const filteredClubs = format === 'zonas' && zone
-    ? clubs.filter((c) => {
-        const tc = tournamentClubs.find((t) => t.club_id === c.id);
-        return tc?.zone === zone;
-      })
-    : tournamentClubs.length > 0
-      ? clubs.filter((c) => tournamentClubs.some((t) => t.club_id === c.id))
-      : clubs;
+  // Todos los clubes del torneo sin filtrar por zona (cruces son interzonales)
+  const availableClubs = tournamentClubs.length > 0
+    ? clubs.filter((c) => tournamentClubs.some((t) => t.club_id === c.id))
+    : clubs;
+
+  // Para mostrar la zona de cada equipo junto a su nombre
+  function clubLabel(clubId: string) {
+    const tc = tournamentClubs.find((t) => t.club_id === clubId);
+    return tc?.zone ? ` (Zona ${tc.zone})` : '';
+  }
 
   const roundLabel = rondaSelect === 'Otro…' ? rondaCustom : rondaSelect;
 
@@ -104,7 +102,7 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
       referee_assistant_1: refereeAssistant1 || undefined,
       referee_assistant_2: refereeAssistant2 || undefined,
       referee_fourth: refereeFourth || undefined,
-      zone: zone || undefined,
+      // No se guarda zone en cruces — la zona de c/equipo viene de tournament_clubs
       round_label: roundLabel || undefined,
     });
     setLoading(false);
@@ -144,36 +142,16 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
           )}
         </div>
 
-        {/* Zona (solo para zonas) */}
-        {format === 'zonas' && tournamentId && (
+        {/* Instancia del cruce — siempre visible una vez seleccionado torneo */}
+        {tournamentId && (
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Zona *</label>
-            <div className="flex gap-2">
-              {(['A', 'B'] as const).map((z) => (
-                <button
-                  key={z} type="button"
-                  onClick={() => { setZone(z); setHomeClubId(''); setAwayClubId(''); }}
-                  className={`flex-1 rounded-xl border-2 py-2.5 text-sm font-bold transition-colors ${
-                    zone === z ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                  }`}
-                >
-                  Zona {z}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Ronda (solo para eliminatorias) */}
-        {format === 'eliminatorias' && tournamentId && (
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Ronda</label>
-            <div className="grid grid-cols-3 gap-2 mb-2">
+            <label className="mb-1 block text-sm font-medium text-slate-700">Instancia</label>
+            <div className="grid grid-cols-2 gap-2 mb-2">
               {RONDAS.filter((r) => r !== 'Otro…').map((r) => (
                 <button
                   key={r} type="button"
                   onClick={() => setRondaSelect(r)}
-                  className={`rounded-xl border-2 px-2 py-2 text-xs font-semibold transition-colors text-center ${
+                  className={`rounded-xl border-2 px-2 py-2.5 text-xs font-semibold transition-colors text-center ${
                     rondaSelect === r ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'
                   }`}
                 >
@@ -183,7 +161,7 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
               <button
                 type="button"
                 onClick={() => setRondaSelect('Otro…')}
-                className={`rounded-xl border-2 px-2 py-2 text-xs font-semibold transition-colors text-center ${
+                className={`rounded-xl border-2 px-2 py-2.5 text-xs font-semibold transition-colors text-center ${
                   rondaSelect === 'Otro…' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'
                 }`}
               >
@@ -201,21 +179,23 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
           </div>
         )}
 
-        {/* Equipos */}
+        {/* Equipos — todos los del torneo, sin filtrar por zona */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Local *</label>
             <select required value={homeClubId} onChange={(e) => setHomeClubId(e.target.value)} className={inputCls}>
               <option value="">— Local —</option>
-              {filteredClubs.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {availableClubs.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}{clubLabel(c.id)}</option>
+              ))}
             </select>
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Visitante *</label>
             <select required value={awayClubId} onChange={(e) => setAwayClubId(e.target.value)} className={inputCls}>
               <option value="">— Visitante —</option>
-              {filteredClubs.filter((c) => c.id !== homeClubId).map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+              {availableClubs.filter((c) => c.id !== homeClubId).map((c) => (
+                <option key={c.id} value={c.id}>{c.name}{clubLabel(c.id)}</option>
               ))}
             </select>
           </div>

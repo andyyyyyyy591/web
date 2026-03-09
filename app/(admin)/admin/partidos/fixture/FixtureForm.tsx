@@ -13,8 +13,8 @@ interface MatchRow {
   awayClubId: string;
   scheduledAt: string;
   stadium: string;
-  zone: 'A' | 'B' | '';       // para formato zonas
-  roundLabel: string;          // para formato eliminatorias
+  zone: 'A' | 'B' | 'interzonal' | '';  // para formato zonas
+  roundLabel: string;                     // para formato eliminatorias
 }
 
 function emptyRow(): MatchRow {
@@ -129,7 +129,8 @@ export function FixtureForm({ tournaments, clubs }: Props) {
       away_club_id: r.awayClubId,
       scheduled_at: r.scheduledAt ? new Date(r.scheduledAt).toISOString() : undefined,
       stadium: r.stadium || undefined,
-      zone: r.zone || undefined,
+      // interzonal: no se guarda zone (c/equipo suma en su propia zona por tournament_clubs)
+      zone: (r.zone && r.zone !== 'interzonal') ? r.zone : undefined,
       round_label: r.roundLabel || undefined,
     }));
     const result = await createMatchesBatch(payload);
@@ -358,7 +359,7 @@ function MatchRowList({ rows, clubs, format, onUpdate, onRemove }: {
   }
 
   // Agrupar por zona para mostrar separadores
-  const sections: { zone: 'A' | 'B' | ''; entries: { row: MatchRow; index: number }[] }[] = [];
+  const sections: { zone: 'A' | 'B' | 'interzonal' | ''; entries: { row: MatchRow; index: number }[] }[] = [];
   rows.forEach((row, index) => {
     const z = row.zone ?? '';
     const existing = sections.find((s) => s.zone === z);
@@ -370,7 +371,9 @@ function MatchRowList({ rows, clubs, format, onUpdate, onRemove }: {
     <>
       {sections.map((section) => (
         <div key={section.zone || 'sin'} className="space-y-2">
-          {section.zone ? (
+          {section.zone === 'interzonal' ? (
+            <p className="text-xs font-bold uppercase tracking-wide text-teal-600 pt-1">Interzonal</p>
+          ) : section.zone ? (
             <p className="text-xs font-bold uppercase tracking-wide text-purple-600 pt-1">
               Zona {section.zone}
             </p>
@@ -449,6 +452,7 @@ function MatchRowInput({ row, index, clubs, format, onUpdate, onRemove, canRemov
             <option value="">—</option>
             <option value="A">A</option>
             <option value="B">B</option>
+            <option value="interzonal">INT</option>
           </select>
         </div>
         <div className="col-span-3">{clubSelect('homeClubId', '— Local —')}</div>

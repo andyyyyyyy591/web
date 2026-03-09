@@ -330,6 +330,10 @@ export interface CreateMatchPayload {
 }
 
 export interface UpdateMatchPayload {
+  home_club_id?: string;
+  away_club_id?: string;
+  home_score?: number | null;
+  away_score?: number | null;
   scheduled_at?: string;
   stadium?: string;
   referee?: string;
