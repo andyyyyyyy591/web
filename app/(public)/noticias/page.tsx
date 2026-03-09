@@ -23,11 +23,11 @@ export default async function NoticiasPage() {
   const [featured, ...rest] = news;
 
   return (
-    <div className="space-y-4 px-4 pt-4">
+    <div className="space-y-4 px-4 pt-4 max-w-2xl mx-auto">
       {/* Featured */}
       <Link href={`/noticias/${featured.slug}`} className="group block">
         <article className="overflow-hidden rounded-2xl bg-card">
-          <div className="relative h-52 w-full">
+          <div className="relative h-52 sm:h-72 w-full">
             {featured.image_url ? (
               <Image src={featured.image_url} alt={featured.title} fill
                 className="object-cover transition-transform group-hover:scale-105" />
