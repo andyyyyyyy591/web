@@ -95,6 +95,15 @@ export function MatchRow({ match }: Props) {
           {(match as any).round_label && (
             <span className="shrink-0 font-semibold">· {(match as any).round_label}</span>
           )}
+          {match.match_zone && (
+            <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
+              match.match_zone === 'interzonal'
+                ? 'bg-orange-500/15 text-orange-400'
+                : 'bg-purple-500/15 text-purple-400'
+            }`}>
+              {match.match_zone === 'zona_a' ? 'Zona A' : match.match_zone === 'zona_b' ? 'Zona B' : 'IZ'}
+            </span>
+          )}
         </div>
 
         {/* Status / time badge */}

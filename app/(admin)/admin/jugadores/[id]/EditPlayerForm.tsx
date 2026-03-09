@@ -12,6 +12,7 @@ import { BackButton } from '@/components/ui/BackButton';
 export function EditPlayerForm({ player, divisions }: { player: PlayerWithClub; divisions: Division[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [firstName, setFirstName] = useState(player.first_name);
@@ -57,6 +58,7 @@ export function EditPlayerForm({ player, divisions }: { player: PlayerWithClub; 
           bucket="photos"
           currentUrl={photoUrl || null}
           onUploaded={setPhotoUrl}
+          onUploading={setImageUploading}
           label="Foto del jugador"
         />
 
@@ -120,7 +122,7 @@ export function EditPlayerForm({ player, divisions }: { player: PlayerWithClub; 
         </div>
 
         <div className="flex gap-3 pt-2">
-          <Button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Guardar cambios'}</Button>
+          <Button type="submit" disabled={loading || imageUploading}>{loading ? 'Guardando...' : imageUploading ? 'Subiendo imagen...' : 'Guardar cambios'}</Button>
           <Button type="button" variant="secondary" onClick={() => router.push('/admin/jugadores')}>Cancelar</Button>
         </div>
       </form>

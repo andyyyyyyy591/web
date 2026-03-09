@@ -20,7 +20,7 @@ interface Props {
     referee_assistant_2: string | null;
     referee_fourth: string | null;
     notes: string | null;
-    zone: string | null;
+    match_zone: 'zona_a' | 'zona_b' | 'interzonal' | null;
     round_label: string | null;
   };
 }
@@ -44,7 +44,7 @@ export function MatchEditForm({ matchId, clubs, initialValues }: Props) {
     referee_assistant_2: initialValues.referee_assistant_2 ?? '',
     referee_fourth: initialValues.referee_fourth ?? '',
     notes: initialValues.notes ?? '',
-    zone: initialValues.zone ?? '',
+    match_zone: initialValues.match_zone ?? '',
     round_label: initialValues.round_label ?? '',
   });
   const [saving, setSaving] = useState(false);
@@ -76,7 +76,7 @@ export function MatchEditForm({ matchId, clubs, initialValues }: Props) {
       referee_assistant_2: values.referee_assistant_2 || undefined,
       referee_fourth: values.referee_fourth || undefined,
       notes: values.notes || undefined,
-      zone: values.zone || null,
+      match_zone: (values.match_zone as 'zona_a' | 'zona_b' | 'interzonal' | null) || null,
       round_label: values.round_label || null,
     });
     setSaving(false);
@@ -175,11 +175,12 @@ export function MatchEditForm({ matchId, clubs, initialValues }: Props) {
             <p className="mb-2 text-xs font-semibold text-slate-600 uppercase tracking-wide">Clasificación</p>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="mb-1 block text-xs font-medium text-slate-600">Zona</span>
-                <select value={values.zone} onChange={(e) => set('zone', e.target.value)} className={inputCls}>
+                <span className="mb-1 block text-xs font-medium text-slate-600">Zona del partido</span>
+                <select value={values.match_zone} onChange={(e) => set('match_zone', e.target.value)} className={inputCls}>
                   <option value="">— Sin zona —</option>
-                  <option value="A">Zona A</option>
-                  <option value="B">Zona B</option>
+                  <option value="zona_a">Zona A</option>
+                  <option value="zona_b">Zona B</option>
+                  <option value="interzonal">Interzonal</option>
                 </select>
               </label>
               <label className="block">

@@ -12,6 +12,7 @@ import { BackButton } from '@/components/ui/BackButton';
 export function NuevoJugadorForm({ clubs, lockedClubId, divisions }: { clubs: Club[]; lockedClubId?: string; divisions: Division[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [clubId, setClubId] = useState(lockedClubId ?? '');
@@ -58,6 +59,7 @@ export function NuevoJugadorForm({ clubs, lockedClubId, divisions }: { clubs: Cl
           bucket="photos"
           currentUrl={photoUrl || null}
           onUploaded={setPhotoUrl}
+          onUploading={setImageUploading}
           label="Foto del jugador"
         />
 
@@ -145,7 +147,7 @@ export function NuevoJugadorForm({ clubs, lockedClubId, divisions }: { clubs: Cl
         </div>
 
         <div className="flex gap-3 pt-2">
-          <Button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Crear jugador'}</Button>
+          <Button type="submit" disabled={loading || imageUploading}>{loading ? 'Guardando...' : imageUploading ? 'Subiendo imagen...' : 'Crear jugador'}</Button>
           <Button type="button" variant="secondary" onClick={() => router.push('/admin/jugadores')}>Cancelar</Button>
         </div>
       </form>

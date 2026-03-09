@@ -15,6 +15,14 @@ const RONDAS = [
   'Otro…',
 ];
 
+type MatchZone = 'zona_a' | 'zona_b' | 'interzonal';
+
+const ZONE_OPTIONS: { value: MatchZone; label: string }[] = [
+  { value: 'zona_a',     label: 'Zona A' },
+  { value: 'zona_b',     label: 'Zona B' },
+  { value: 'interzonal', label: 'Interzonal' },
+];
+
 const FORMAT_BADGE: Record<TournamentFormat, { label: string; color: string }> = {
   todos_contra_todos: { label: 'Todos contra todos', color: 'bg-blue-100 text-blue-700' },
   zonas:              { label: 'Zona A / Zona B',    color: 'bg-purple-100 text-purple-700' },
@@ -47,6 +55,9 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
   const [rondaSelect, setRondaSelect] = useState('');
   const [rondaCustom, setRondaCustom] = useState('');
 
+  // Zona del partido (solo para formato 'zonas')
+  const [matchZone, setMatchZone] = useState<MatchZone | null>(null);
+
   // Clubes del torneo
   const [tournamentClubs, setTournamentClubs] = useState<{ club_id: string; club_name: string; zone: string | null }[]>([]);
 
@@ -61,11 +72,22 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
   const format: TournamentFormat = (selectedTournament as any)?.format ?? 'todos_contra_todos';
   const badge = FORMAT_BADGE[format];
 
+  function autoDetectZone(homeId: string, awayId: string, tc = tournamentClubs): MatchZone | null {
+    if (format !== 'zonas') return null;
+    const homeZone = tc.find((t) => t.club_id === homeId)?.zone;
+    const awayZone = tc.find((t) => t.club_id === awayId)?.zone;
+    if (!homeZone && !awayZone) return null;
+    if (homeZone === 'A' && awayZone === 'A') return 'zona_a';
+    if (homeZone === 'B' && awayZone === 'B') return 'zona_b';
+    return 'interzonal';
+  }
+
   async function handleTournamentChange(id: string) {
     setTournamentId(id);
     setHomeClubId('');
     setAwayClubId('');
     setRondaSelect('');
+    setMatchZone(null);
     if (id) {
       const tc = await getTournamentClubsForFixture(id);
       setTournamentClubs(tc);
@@ -74,7 +96,17 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
     }
   }
 
-  // Todos los clubes del torneo sin filtrar por zona (cruces son interzonales)
+  function handleHomeClubChange(id: string) {
+    setHomeClubId(id);
+    if (format === 'zonas' && id && awayClubId) setMatchZone(autoDetectZone(id, awayClubId));
+  }
+
+  function handleAwayClubChange(id: string) {
+    setAwayClubId(id);
+    if (format === 'zonas' && homeClubId && id) setMatchZone(autoDetectZone(homeClubId, id));
+  }
+
+  // Todos los clubes del torneo sin filtrar por zona
   const availableClubs = tournamentClubs.length > 0
     ? clubs.filter((c) => tournamentClubs.some((t) => t.club_id === c.id))
     : clubs;
@@ -102,8 +134,8 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
       referee_assistant_1: refereeAssistant1 || undefined,
       referee_assistant_2: refereeAssistant2 || undefined,
       referee_fourth: refereeFourth || undefined,
-      // No se guarda zone en cruces — la zona de c/equipo viene de tournament_clubs
       round_label: roundLabel || undefined,
+      match_zone: matchZone ?? undefined,
     });
     setLoading(false);
     if (result.error) setError(result.error);
@@ -179,11 +211,36 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
           </div>
         )}
 
+        {/* Zona (solo para torneos con formato 'zonas') */}
+        {format === 'zonas' && tournamentId && (
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Zona del partido</label>
+            <div className="flex gap-2">
+              {ZONE_OPTIONS.map((z) => (
+                <button
+                  key={z.value}
+                  type="button"
+                  onClick={() => setMatchZone(z.value)}
+                  className={`flex-1 rounded-xl border-2 py-2.5 text-xs font-bold transition-colors ${
+                    matchZone === z.value
+                      ? z.value === 'interzonal'
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                        : 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  {z.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Equipos — todos los del torneo, sin filtrar por zona */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Local *</label>
-            <select required value={homeClubId} onChange={(e) => setHomeClubId(e.target.value)} className={inputCls}>
+            <select required value={homeClubId} onChange={(e) => handleHomeClubChange(e.target.value)} className={inputCls}>
               <option value="">— Local —</option>
               {availableClubs.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}{clubLabel(c.id)}</option>
@@ -192,7 +249,7 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Visitante *</label>
-            <select required value={awayClubId} onChange={(e) => setAwayClubId(e.target.value)} className={inputCls}>
+            <select required value={awayClubId} onChange={(e) => handleAwayClubChange(e.target.value)} className={inputCls}>
               <option value="">— Visitante —</option>
               {availableClubs.filter((c) => c.id !== homeClubId).map((c) => (
                 <option key={c.id} value={c.id}>{c.name}{clubLabel(c.id)}</option>

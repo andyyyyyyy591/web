@@ -86,8 +86,8 @@ export default async function AdminMatchPage({ params }: Props) {
           referee_assistant_2: match.referee_assistant_2,
           referee_fourth: match.referee_fourth,
           notes: match.notes,
-          zone: (match as any).zone ?? null,
-          round_label: (match as any).round_label ?? null,
+          match_zone: match.match_zone ?? null,
+          round_label: match.round_label ?? null,
         }}
       />
 

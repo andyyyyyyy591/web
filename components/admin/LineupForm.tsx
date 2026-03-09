@@ -188,11 +188,18 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup,
       )}
 
       {/* Cuerpo técnico */}
-      {coachingStaff.length > 0 && (
-        <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
-            Cuerpo técnico
-          </p>
+      <div>
+        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+          Cuerpo técnico
+        </p>
+        {coachingStaff.length === 0 ? (
+          <a
+            href="/admin/cuerpo-tecnico"
+            className="block rounded-lg border border-dashed border-slate-200 px-3 py-3 text-center text-xs text-slate-400 hover:border-green-300 hover:text-green-600 transition-colors"
+          >
+            Sin cuerpo técnico registrado — hacé clic aquí para agregar
+          </a>
+        ) : (
           <div className="space-y-1">
             {coachingStaff.map((s) => (
               <button
@@ -218,8 +225,8 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup,
               </button>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Suspendidos — no pueden ser convocados */}
       {suspended.length > 0 && (

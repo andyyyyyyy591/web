@@ -172,6 +172,7 @@ export interface Match {
   notes: string | null;
   zone: string | null;
   round_label: string | null;
+  match_zone: 'zona_a' | 'zona_b' | 'interzonal' | null;
   penalty_winner_club_id: string | null;
   created_at: string;
   updated_at: string;
@@ -340,6 +341,7 @@ export interface CreateMatchPayload {
   notes?: string;
   zone?: string;
   round_label?: string;
+  match_zone?: 'zona_a' | 'zona_b' | 'interzonal';
 }
 
 export interface UpdateMatchPayload {
@@ -357,6 +359,7 @@ export interface UpdateMatchPayload {
   image_url?: string;
   zone?: string | null;
   round_label?: string | null;
+  match_zone?: 'zona_a' | 'zona_b' | 'interzonal' | null;
 }
 
 export interface AddMatchEventPayload {
