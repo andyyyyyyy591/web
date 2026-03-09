@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getMatchById } from '@/lib/queries/matches';
 import { getPlayersByClub, getAllPlayers } from '@/lib/queries/players';
 import { getClubs } from '@/lib/queries/clubs';
+import { getSuspendedPlayers } from '@/lib/queries/suspensions';
 import { LiveMatchControl } from '@/components/admin/LiveMatchControl';
 import { getAdminRole, getAdminClubId } from '@/lib/utils/auth';
 
@@ -21,8 +22,16 @@ export default async function LiveControlPage({ params }: Props) {
   const match = await getMatchById(id);
   if (!match) notFound();
 
+  const [allClubs, allSuspended] = await Promise.all([
+    getClubs(),
+    getSuspendedPlayers(match.tournament_id).catch(() => []),
+  ]);
+
+  const suspendedPlayerIds = allSuspended
+    .filter((s) => !s.served)
+    .map((s) => s.player_id);
+
   // Solo los clubes del partido
-  const allClubs = await getClubs();
   const matchClubs = allClubs.filter(
     (c) => c.id === match.home_club_id || c.id === match.away_club_id,
   );
@@ -55,6 +64,7 @@ export default async function LiveControlPage({ params }: Props) {
         players={matchPlayers}
         role={role}
         userClubId={userClubId}
+        suspendedPlayerIds={suspendedPlayerIds}
       />
     </div>
   );

@@ -41,13 +41,21 @@ function ClubLogo({ url, name, size = 56 }: { url: string | null; name: string; 
   );
 }
 
+interface SuspendedEntry {
+  player_id: string;
+  first_name: string;
+  last_name: string;
+}
+
 interface Props {
   match: MatchDetail;
   homePosition?: number;
   awayPosition?: number;
+  homeSuspended?: SuspendedEntry[];
+  awaySuspended?: SuspendedEntry[];
 }
 
-export function MatchTabs({ match, homePosition, awayPosition }: Props) {
+export function MatchTabs({ match, homePosition, awayPosition, homeSuspended, awaySuspended }: Props) {
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Previa');
   const live = isLive(match.status);
   const finished = match.status === 'finished';
@@ -189,11 +197,13 @@ export function MatchTabs({ match, homePosition, awayPosition }: Props) {
                   starters={match.home_starters}
                   subs={match.home_subs}
                   clubName={match.home_club.name}
+                  suspended={homeSuspended}
                 />
                 <MatchLineup
                   starters={match.away_starters}
                   subs={match.away_subs}
                   clubName={match.away_club.name}
+                  suspended={awaySuspended}
                 />
               </div>
             </div>

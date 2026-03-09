@@ -21,6 +21,7 @@ interface LiveMatchControlProps {
   role: AdminRole | null;
   /** Club del team admin (si aplica) */
   userClubId?: string | null;
+  suspendedPlayerIds?: string[];
 }
 
 // Transiciones de estado
@@ -50,7 +51,7 @@ function btnColor(color: string) {
   return map[color] ?? map.green;
 }
 
-export function LiveMatchControl({ initialMatch, clubs, players, role, userClubId }: LiveMatchControlProps) {
+export function LiveMatchControl({ initialMatch, clubs, players, role, userClubId, suspendedPlayerIds = [] }: LiveMatchControlProps) {
   const match = useRealtimeMatch(initialMatch);
   const events = useRealtimeEvents(initialMatch.id, initialMatch.events);
   const [transitioning, setTransitioning] = useState<string | null>(null);
@@ -175,6 +176,15 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
         </div>
       )}
 
+      {/* Panel de penales */}
+      {(match.status === 'penalties' || events.some((e) => e.period === 'penalties')) && (
+        <PenaltyBoard
+          events={events}
+          homeClub={initialMatch.home_club}
+          awayClub={initialMatch.away_club}
+        />
+      )}
+
       {/* Aviso team admin */}
       {!isSuperAdmin && teamAdminClub && (
         <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm text-blue-700">
@@ -233,6 +243,7 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
                     clubName={club.name}
                     players={clubPlayers}
                     existingLineup={existingLineup}
+                    suspendedPlayerIds={suspendedPlayerIds}
                   />
                 </div>
               );
@@ -286,6 +297,71 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PenaltyBoard({ events, homeClub, awayClub }: {
+  events: MatchDetail['events'];
+  homeClub: Club;
+  awayClub: Club;
+}) {
+  const penaltyEvents = events.filter((e) => e.period === 'penalties');
+  const homeKicks = penaltyEvents.filter((e) => e.club_id === homeClub.id);
+  const awayKicks = penaltyEvents.filter((e) => e.club_id === awayClub.id);
+  const homeScore = homeKicks.filter((e) => e.type === 'goal' || e.type === 'penalty_goal').length;
+  const awayScore = awayKicks.filter((e) => e.type === 'goal' || e.type === 'penalty_goal').length;
+  const maxKicks = Math.max(homeKicks.length, awayKicks.length);
+
+  return (
+    <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4">
+      <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-widest text-blue-400">Penales</p>
+
+      {/* Marcador penales */}
+      <div className="mb-4 flex items-center justify-center gap-4">
+        <span className="text-sm font-bold text-slate-700">{homeClub.short_name ?? homeClub.name}</span>
+        <span className="text-3xl font-black text-slate-900 tabular-nums">{homeScore} – {awayScore}</span>
+        <span className="text-sm font-bold text-slate-700">{awayClub.short_name ?? awayClub.name}</span>
+      </div>
+
+      {/* Kicks */}
+      {maxKicks > 0 && (
+        <div className="grid grid-cols-2 gap-x-3">
+          {/* Home */}
+          <div className="space-y-1">
+            {homeKicks.map((e, i) => {
+              const ok = e.type === 'goal' || e.type === 'penalty_goal';
+              return (
+                <div key={e.id} className="flex items-center gap-2">
+                  <span className={`text-base leading-none ${ok ? 'text-green-600' : 'text-red-500'}`}>
+                    {ok ? '⚽' : '✗'}
+                  </span>
+                  <span className="truncate text-sm text-slate-700">
+                    {e.player ? e.player.last_name : `Tiro ${i + 1}`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Away */}
+          <div className="space-y-1">
+            {awayKicks.map((e, i) => {
+              const ok = e.type === 'goal' || e.type === 'penalty_goal';
+              return (
+                <div key={e.id} className="flex items-center justify-end gap-2">
+                  <span className="truncate text-sm text-slate-700">
+                    {e.player ? e.player.last_name : `Tiro ${i + 1}`}
+                  </span>
+                  <span className={`text-base leading-none ${ok ? 'text-green-600' : 'text-red-500'}`}>
+                    {ok ? '⚽' : '✗'}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

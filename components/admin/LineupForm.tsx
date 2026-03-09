@@ -10,11 +10,12 @@ interface Props {
   clubName: string;
   players: Player[];
   existingLineup: MatchLineupWithPlayer[];
+  suspendedPlayerIds?: string[];
 }
 
 const POSITIONS = ['', 'ARQ', 'DFC', 'LD', 'LI', 'MCD', 'MC', 'MCO', 'MI', 'MD', 'SD', 'DC', 'DEL'];
 
-export function LineupForm({ matchId, clubId, clubName, players, existingLineup }: Props) {
+export function LineupForm({ matchId, clubId, clubName, players, existingLineup, suspendedPlayerIds = [] }: Props) {
   type Entry = { selected: boolean; is_starter: boolean; shirt_number: string; position_label: string };
 
   const [entries, setEntries] = useState<Record<string, Entry>>(() => {
@@ -74,9 +75,12 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup 
     else setMessage('Alineación guardada.');
   }
 
+  const suspendedSet = new Set(suspendedPlayerIds);
+
   const starters = players.filter((p) => entries[p.id]?.selected && entries[p.id]?.is_starter);
   const subs = players.filter((p) => entries[p.id]?.selected && !entries[p.id]?.is_starter);
-  const unselected = players.filter((p) => !entries[p.id]?.selected);
+  const unselected = players.filter((p) => !entries[p.id]?.selected && !suspendedSet.has(p.id));
+  const suspended = players.filter((p) => suspendedSet.has(p.id));
 
   const searchNorm = playerSearch.toLowerCase().trim();
   const filteredUnselected = searchNorm
@@ -170,6 +174,27 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup 
                 </button>
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Suspendidos — no pueden ser convocados */}
+      {suspended.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-red-400">
+            Suspendidos ({suspended.length})
+          </p>
+          <div className="space-y-1">
+            {suspended.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center gap-3 rounded-lg border border-red-100 bg-red-50 px-3 py-2 opacity-70"
+              >
+                <span className="w-6 text-right text-xs text-red-300">{p.jersey_number ?? '—'}</span>
+                <span className="flex-1 text-sm text-red-700">{p.last_name} {p.first_name}</span>
+                <span className="text-xs font-semibold text-red-400">🚫 Suspendido</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

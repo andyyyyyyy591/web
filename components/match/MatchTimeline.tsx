@@ -21,8 +21,8 @@ function buildTimeline(events: MatchEventWithPlayers[], status?: MatchStatus): T
     const period = event.period;
 
     if (lastPeriod !== null && period !== lastPeriod) {
-      if (period === 'extra_time_first') {
-        items.push({ kind: 'divider', label: 'Prórroga' });
+      if (period === 'second_half' && lastPeriod === 'first_half') {
+        items.push({ kind: 'divider', label: 'ET' });
       } else if (period === 'penalties') {
         items.push({ kind: 'divider', label: 'Penales' });
       }
