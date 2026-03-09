@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { MatchLineupWithPlayer, CoachingStaff } from '@/types';
 import { formatPlayerName } from '@/lib/utils/format';
 
@@ -71,7 +72,13 @@ export function MatchLineup({ starters, subs, clubName, suspended, staff }: Matc
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Cuerpo técnico</p>
           {staff.map((s) => (
             <div key={s.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5">
-              <span className="text-xs">👨‍💼</span>
+              <div className="h-7 w-7 flex-shrink-0 overflow-hidden rounded-full bg-slate-200 flex items-center justify-center">
+                {s.photo_url ? (
+                  <Image src={s.photo_url} alt={s.first_name} width={28} height={28} className="object-cover w-full h-full" />
+                ) : (
+                  <span className="text-[10px] text-slate-500 font-bold">DT</span>
+                )}
+              </div>
               <span className="flex-1 text-sm text-slate-700">{s.last_name} {s.first_name}</span>
               <span className="text-xs text-slate-400">{s.role}</span>
             </div>

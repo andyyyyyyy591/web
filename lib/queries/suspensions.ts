@@ -81,9 +81,18 @@ export async function getSuspendedPlayers(tournamentId: string): Promise<Suspend
 
   // Build match_id → date_number map
   const matchDateMap = new Map<string, number>();
+  let maxDateNum = 0;
   for (const m of matches) {
     const num = (m.match_date as any)?.number as number | undefined;
-    if (num !== undefined) matchDateMap.set(m.id, num);
+    if (num !== undefined) {
+      matchDateMap.set(m.id, num);
+      if (num > maxDateNum) maxDateNum = num;
+    }
+  }
+  // Assign synthetic date numbers to dateless matches (e.g. interzonales sin fecha)
+  let syntheticDate = maxDateNum + 1;
+  for (const m of matches) {
+    if (!matchDateMap.has(m.id)) matchDateMap.set(m.id, syntheticDate++);
   }
 
   // 3. Get all cards from finished matches

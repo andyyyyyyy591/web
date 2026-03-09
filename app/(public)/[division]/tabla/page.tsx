@@ -16,6 +16,11 @@ export default async function TablaPage({ params }: Props) {
   const tournament = await getActiveTournamentByDivision(division.id);
   const standings = tournament ? await getStandingsByTournament(tournament.id) : [];
 
+  const hasZones = standings.some((s) => s.zone);
+  const zoneA = standings.filter((s) => s.zone === 'A');
+  const zoneB = standings.filter((s) => s.zone === 'B');
+  const noZone = standings.filter((s) => !s.zone);
+
   return (
     <>
       <DivisionNav divisionSlug={slug} />
@@ -25,6 +30,22 @@ export default async function TablaPage({ params }: Props) {
         </h1>
         {standings.length === 0 ? (
           <p className="py-12 text-center text-slate-400">Sin posiciones registradas</p>
+        ) : hasZones ? (
+          <div className="space-y-6">
+            {zoneA.length > 0 && (
+              <div>
+                <h2 className="mb-3 text-sm font-bold uppercase tracking-widest text-purple-600">Zona A</h2>
+                <StandingsTable standings={zoneA} />
+              </div>
+            )}
+            {zoneB.length > 0 && (
+              <div>
+                <h2 className="mb-3 text-sm font-bold uppercase tracking-widest text-purple-600">Zona B</h2>
+                <StandingsTable standings={zoneB} />
+              </div>
+            )}
+            {noZone.length > 0 && <StandingsTable standings={noZone} />}
+          </div>
         ) : (
           <StandingsTable standings={standings} />
         )}

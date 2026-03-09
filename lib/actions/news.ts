@@ -2,31 +2,34 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
 import type { CreateNewsPayload } from '@/types';
 
 /** After create/update, scan title+content for club names and sync news_clubs */
 async function syncNewsClubs(newsId: string, title: string, content: string) {
-  const admin = createAdminClient();
+  try {
+    const supabase = await createClient();
 
-  const { data: clubs } = await admin
-    .from('clubs')
-    .select('id, name')
-    .eq('is_active', true);
+    const { data: clubs } = await supabase
+      .from('clubs')
+      .select('id, name')
+      .eq('is_active', true);
 
-  if (!clubs || clubs.length === 0) return;
+    if (!clubs || clubs.length === 0) return;
 
-  const text = `${title} ${content}`.toLowerCase();
-  const matchedIds = clubs
-    .filter((c) => text.includes(c.name.toLowerCase()))
-    .map((c) => c.id);
+    const text = `${title} ${content}`.toLowerCase();
+    const matchedIds = clubs
+      .filter((c) => text.includes(c.name.toLowerCase()))
+      .map((c) => c.id);
 
-  await admin.from('news_clubs').delete().eq('news_id', newsId);
+    await supabase.from('news_clubs').delete().eq('news_id', newsId);
 
-  if (matchedIds.length > 0) {
-    await admin
-      .from('news_clubs')
-      .insert(matchedIds.map((clubId) => ({ news_id: newsId, club_id: clubId })));
+    if (matchedIds.length > 0) {
+      await supabase
+        .from('news_clubs')
+        .insert(matchedIds.map((clubId) => ({ news_id: newsId, club_id: clubId })));
+    }
+  } catch {
+    // Don't let club-linking errors break news creation
   }
 }
 

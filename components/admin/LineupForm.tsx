@@ -16,7 +16,23 @@ interface Props {
   existingStaffIds?: string[];
 }
 
-const POSITIONS = ['', 'ARQ', 'DFC', 'LD', 'LI', 'MCD', 'MC', 'MCO', 'MI', 'MD', 'SD', 'DC', 'DEL'];
+const POSITIONS = ['', 'ARQ', 'DFC', 'LD', 'LI', 'MCD', 'MC', 'MCO', 'MI', 'MD', 'EXT D', 'EXT I', 'SD', 'DC', 'DEL'];
+
+const FORMATIONS: Record<string, string[]> = {
+  '4-4-2':   ['ARQ', 'LD', 'DFC', 'DFC', 'LI', 'MD', 'MC', 'MC', 'MI', 'DC', 'DC'],
+  '4-3-3':   ['ARQ', 'LD', 'DFC', 'DFC', 'LI', 'MD', 'MC', 'MI', 'EXT D', 'DC', 'EXT I'],
+  '4-2-3-1': ['ARQ', 'LD', 'DFC', 'DFC', 'LI', 'MCD', 'MCD', 'MD', 'MCO', 'MI', 'SD'],
+  '4-1-4-1': ['ARQ', 'LD', 'DFC', 'DFC', 'LI', 'MCD', 'MD', 'MC', 'MC', 'MI', 'SD'],
+  '3-5-2':   ['ARQ', 'DFC', 'DFC', 'DFC', 'MD', 'MC', 'MCD', 'MC', 'MI', 'DC', 'DC'],
+  '5-3-2':   ['ARQ', 'LD', 'DFC', 'DFC', 'DFC', 'LI', 'MD', 'MC', 'MI', 'DC', 'DC'],
+};
+
+const POSITION_ORDER: Record<string, number> = {
+  ARQ: 0, POR: 0,
+  DFC: 1, LD: 1, LI: 1,
+  MCD: 2, MC: 2, MCO: 2, MI: 2, MD: 2, 'EXT D': 2, 'EXT I': 2,
+  SD: 3, DC: 3, DEL: 3,
+};
 
 export function LineupForm({ matchId, clubId, clubName, players, existingLineup, suspendedPlayerIds = [], coachingStaff = [], existingStaffIds = [] }: Props) {
   type Entry = { selected: boolean; is_starter: boolean; shirt_number: string; position_label: string };
@@ -47,6 +63,22 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup,
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [playerSearch, setPlayerSearch] = useState('');
+  const [formation, setFormation] = useState('');
+
+  function applyFormation(formationKey: string) {
+    const positions = FORMATIONS[formationKey];
+    if (!positions) return;
+    const starterIds = players
+      .filter((p) => entries[p.id]?.selected && entries[p.id]?.is_starter)
+      .map((p) => p.id);
+    setEntries((prev) => {
+      const next = { ...prev };
+      starterIds.forEach((id, i) => {
+        if (positions[i]) next[id] = { ...next[id], position_label: positions[i] };
+      });
+      return next;
+    });
+  }
 
   function toggle(playerId: string) {
     setEntries((prev) => ({
@@ -86,7 +118,13 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup,
 
   const suspendedSet = new Set(suspendedPlayerIds);
 
-  const starters = players.filter((p) => entries[p.id]?.selected && entries[p.id]?.is_starter);
+  const starters = players
+    .filter((p) => entries[p.id]?.selected && entries[p.id]?.is_starter)
+    .sort((a, b) => {
+      const oa = POSITION_ORDER[entries[a.id]?.position_label ?? ''] ?? 4;
+      const ob = POSITION_ORDER[entries[b.id]?.position_label ?? ''] ?? 4;
+      return oa - ob;
+    });
   const subs = players.filter((p) => entries[p.id]?.selected && !entries[p.id]?.is_starter);
   const unselected = players.filter((p) => !entries[p.id]?.selected && !suspendedSet.has(p.id));
   const suspended = players.filter((p) => suspendedSet.has(p.id));
@@ -112,10 +150,33 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup,
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
       {message && <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{message}</p>}
 
+      {/* Formación */}
+      {starters.length > 0 && (
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-semibold text-slate-500">Formación</label>
+          <select
+            value={formation}
+            onChange={(e) => {
+              setFormation(e.target.value);
+              applyFormation(e.target.value);
+            }}
+            className="rounded border border-slate-300 px-2 py-1 text-xs focus:outline-none focus:border-green-500"
+          >
+            <option value="">— Seleccionar —</option>
+            {Object.keys(FORMATIONS).map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+          {formation && (
+            <span className="text-xs text-slate-400">(posiciones asignadas automáticamente)</span>
+          )}
+        </div>
+      )}
+
       {/* Titulares */}
       {starters.length > 0 && (
         <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">Titulares</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">Titulares ({starters.length})</p>
           <div className="space-y-2">
             {starters.map((p) => (
               <PlayerRow key={p.id} player={p} entry={entries[p.id]} onToggle={toggle} onUpdate={update} />

@@ -210,7 +210,7 @@ export function MatchTabs({ match, homePosition, awayPosition, homeSuspended, aw
                     <Formation starters={match.home_starters} label={match.home_club.name} />
                   )}
                   {match.away_starters.length > 0 && (
-                    <Formation starters={match.away_starters} label={match.away_club.name} flip />
+                    <Formation starters={match.away_starters} label={match.away_club.name} />
                   )}
                 </div>
               )}

@@ -5,10 +5,9 @@ import { formatPlayerShort } from '@/lib/utils/format';
 interface FormationProps {
   starters: MatchLineupWithPlayer[];
   label?: string;
-  flip?: boolean;
 }
 
-export function Formation({ starters, label, flip = false }: FormationProps) {
+export function Formation({ starters, label }: FormationProps) {
   return (
     <div className="flex flex-col gap-2">
       {label && <h3 className="text-center text-sm font-semibold text-slate-700">{label}</h3>}
@@ -28,7 +27,7 @@ export function Formation({ starters, label, flip = false }: FormationProps) {
         {starters.map((lineup) => {
           const x = ((lineup.field_x ?? 50) / 100) * 220;
           const rawY = (lineup.field_y ?? 50) / 100;
-          const y = (flip ? 1 - rawY : rawY) * 320;
+          const y = (1 - rawY) * 320; // Always invert: ARQ (low rawY) renders at bottom
           const photo = lineup.player.photo_url;
           return (
             <div
