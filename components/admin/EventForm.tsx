@@ -14,12 +14,13 @@ interface EventFormProps {
 
 // Tipos de evento agrupados (para UI de botones grandes)
 const EVENT_BUTTONS = [
-  { type: 'goal' as EventType,        label: 'Gol',       emoji: '⚽', color: 'green' },
-  { type: 'yellow_card' as EventType, label: 'Amarilla',  emoji: '🟨', color: 'yellow' },
-  { type: 'red_card' as EventType,    label: 'Roja',      emoji: '🟥', color: 'red' },
-  { type: 'substitution' as EventType,label: 'Cambio',    emoji: '🔄', color: 'blue' },
-  { type: 'penalty_missed' as EventType, label: 'Penal fallado', emoji: '✖️', color: 'orange' },
-  { type: 'second_yellow' as EventType, label: 'Doble amarilla', emoji: '🟨🟥', color: 'red' },
+  { type: 'goal' as EventType,          label: 'Gol',           emoji: '⚽',   color: 'green' },
+  { type: 'penalty_goal' as EventType,  label: 'Gol de penal',  emoji: '🎯',   color: 'green' },
+  { type: 'penalty_missed' as EventType,label: 'Penal fallado', emoji: '✖️',   color: 'orange' },
+  { type: 'yellow_card' as EventType,   label: 'Amarilla',      emoji: '🟨',   color: 'yellow' },
+  { type: 'red_card' as EventType,      label: 'Roja',          emoji: '🟥',   color: 'red' },
+  { type: 'second_yellow' as EventType, label: 'Doble amarilla',emoji: '🟨🟥', color: 'red' },
+  { type: 'substitution' as EventType,  label: 'Cambio',        emoji: '🔄',   color: 'blue' },
 ] as const;
 
 // Sub-tipos de gol
@@ -31,11 +32,9 @@ const GOAL_SUBTYPES = [
 ] as const;
 
 const PERIOD_OPTIONS: { value: MatchPeriod; label: string }[] = [
-  { value: 'first_half',        label: '1° Tiempo' },
-  { value: 'second_half',       label: '2° Tiempo' },
-  { value: 'extra_time_first',  label: 'T.E. 1°' },
-  { value: 'extra_time_second', label: 'T.E. 2°' },
-  { value: 'penalties',         label: 'Penales' },
+  { value: 'first_half',  label: '1° Tiempo' },
+  { value: 'second_half', label: '2° Tiempo' },
+  { value: 'penalties',   label: 'Penales' },
 ];
 
 function colorClasses(color: string, selected: boolean) {

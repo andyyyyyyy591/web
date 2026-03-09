@@ -54,6 +54,9 @@ function buildTimeline(
   }
 
   if (atOrPast(status, 'second_half')) {
+    // Inicio del 2° tiempo
+    items.push({ kind: 'divider', label: 'Inicio del 2° tiempo', variant: 'start' });
+
     // Second half events
     for (const evt of events.filter((e) => e.period === 'second_half')) {
       items.push({ kind: 'event', event: evt });

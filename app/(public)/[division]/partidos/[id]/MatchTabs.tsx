@@ -7,7 +7,7 @@ import { MatchTimeline } from '@/components/match/MatchTimeline';
 import { Formation } from '@/components/match/Formation';
 import { MatchLineup } from '@/components/match/MatchLineup';
 import { LiveClock } from '@/components/match/LiveClock';
-import { isLive, STATUS_LABELS } from '@/types';
+import { isLive, STATUS_LABELS, GOAL_TYPES } from '@/types';
 import type { MatchStaffEntry } from '@/lib/queries/coaching-staff';
 
 const TABS = ['Previa', 'Alineación', 'Directo'] as const;
@@ -106,6 +106,24 @@ export function MatchTabs({ match, homePosition, awayPosition, homeSuspended, aw
               </span>
             )}
             {live && <LiveClock match={match} />}
+            {match.penalty_winner_club_id && (() => {
+              const winnerClub = match.penalty_winner_club_id === match.home_club_id
+                ? match.home_club : match.away_club;
+              const homeGoals = match.events.filter(
+                (e) => e.period === 'penalties' && e.club_id === match.home_club_id && GOAL_TYPES.includes(e.type as never),
+              ).length;
+              const awayGoals = match.events.filter(
+                (e) => e.period === 'penalties' && e.club_id === match.away_club_id && GOAL_TYPES.includes(e.type as never),
+              ).length;
+              const hasPenaltyScore = match.events.some((e) => e.period === 'penalties');
+              return (
+                <span className="text-[11px] font-bold text-accent text-center">
+                  {hasPenaltyScore
+                    ? `${winnerClub.short_name ?? winnerClub.name} ganó ${homeGoals}–${awayGoals} en penales`
+                    : `${winnerClub.short_name ?? winnerClub.name} ganó por penales`}
+                </span>
+              );
+            })()}
           </div>
 
           {/* Away */}

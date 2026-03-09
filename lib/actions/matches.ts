@@ -70,6 +70,30 @@ export async function updateMatchStatus(
   return { success: true };
 }
 
+/** Cierra la tanda de penales, marca el partido como terminado y guarda el ganador. */
+export async function finalizePenalties(matchId: string, winnerClubId: string) {
+  const supabase = await createClient();
+  const admin = createAdminClient();
+
+  const { error } = await admin.from('matches').update({
+    status: 'finished',
+    finished_at: new Date().toISOString(),
+    penalty_winner_club_id: winnerClubId,
+  }).eq('id', matchId);
+  if (error) return { error: error.message };
+
+  const { data: matchData } = await supabase
+    .from('matches').select('tournament_id').eq('id', matchId).single();
+  if (matchData?.tournament_id) {
+    await admin.rpc('recalculate_tournament_standings', {
+      p_tournament_id: matchData.tournament_id,
+    });
+  }
+
+  revalidatePath(`/admin/partidos/${matchId}/live`);
+  return { success: true };
+}
+
 export async function createMatchDate(tournamentId: string, number: number, label?: string) {
   const supabase = await createClient();
 

@@ -7,7 +7,7 @@ import { EventForm } from '@/components/admin/EventForm';
 import { LineupForm } from '@/components/admin/LineupForm';
 import { LiveClock } from '@/components/match/LiveClock';
 import { deleteMatchEvent } from '@/lib/actions/events';
-import { updateMatchStatus } from '@/lib/actions/matches';
+import { updateMatchStatus, finalizePenalties } from '@/lib/actions/matches';
 import type { MatchDetail, Club, Player, MatchStatus, CoachingStaff } from '@/types';
 import { STATUS_LABELS, isLive } from '@/types';
 import type { AdminRole } from '@/types';
@@ -34,15 +34,10 @@ const TRANSITIONS: Array<{
   label: string;
   color: string;
 }> = [
-  { from: ['scheduled'],                            to: 'first_half',        label: '▶ Iniciar partido',    color: 'green' },
-  { from: ['first_half'],                           to: 'halftime',          label: '⏸ Medio tiempo',       color: 'yellow' },
-  { from: ['halftime'],                             to: 'second_half',       label: '▶ 2° Tiempo',          color: 'green' },
-  { from: ['second_half'],                          to: 'extra_time_first',  label: '⏱ Tiempo extra',       color: 'yellow' },
-  { from: ['second_half', 'extra_time_second'],     to: 'finished',          label: '⏹ Finalizar',          color: 'red' },
-  { from: ['penalties'],                            to: 'finished',          label: '⏹ Finalizar',          color: 'red' },
-  { from: ['extra_time_first'],                     to: 'extra_time_break',  label: '⏸ Descanso T.E.',     color: 'yellow' },
-  { from: ['extra_time_break'],                     to: 'extra_time_second', label: '▶ T.E. 2°',           color: 'green' },
-  { from: ['extra_time_second'],                    to: 'penalties',         label: '🎯 Penales',           color: 'blue' },
+  { from: ['scheduled'],   to: 'first_half',  label: '▶ Iniciar partido', color: 'green' },
+  { from: ['first_half'],  to: 'halftime',    label: '⏸ Medio tiempo',    color: 'yellow' },
+  { from: ['halftime'],    to: 'second_half', label: '▶ 2° Tiempo',       color: 'green' },
+  { from: ['second_half'], to: 'finished',    label: '⏹ Finalizar',       color: 'red' },
 ];
 
 function btnColor(color: string) {
@@ -76,13 +71,32 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
     setTransitionError(null);
     const extra: { first_half_added_time?: number; second_half_added_time?: number } = {};
     if (to === 'halftime' && addedTime1) extra.first_half_added_time = parseInt(addedTime1);
-    if ((to === 'finished' || to === 'extra_time_first') && addedTime2) extra.second_half_added_time = parseInt(addedTime2);
+    if ((to === 'finished' || to === 'penalties') && addedTime2) extra.second_half_added_time = parseInt(addedTime2);
     const result = await updateMatchStatus(match.id, to, Object.keys(extra).length ? extra : undefined);
     if (result.error) setTransitionError(result.error);
     setTransitioning(null);
   }
 
-  const available = TRANSITIONS.filter((t) => t.from.includes(match.status));
+  async function handleFinalizePenalties(winnerClubId: string) {
+    setTransitioning('finished');
+    setTransitionError(null);
+    const result = await finalizePenalties(match.id, winnerClubId);
+    if (result?.error) setTransitionError(result.error);
+    setTransitioning(null);
+  }
+
+  // Mostrar "Penales" solo en segundo tiempo de un cruce empatado
+  const isCrucesTie =
+    match.status === 'second_half' &&
+    initialMatch.tournament.format === 'eliminatorias' &&
+    match.home_score === match.away_score;
+
+  const available = [
+    ...TRANSITIONS.filter((t) => t.from.includes(match.status)),
+    ...(isCrucesTie
+      ? [{ from: ['second_half' as MatchStatus], to: 'penalties' as MatchStatus, label: '🎯 Penales', color: 'blue' }]
+      : []),
+  ];
 
   // Para team admin: solo pueden ver su equipo, pero pueden ver la timeline completa
   const lockedClubId = !isSuperAdmin && userClubId ? userClubId : undefined;
@@ -186,23 +200,10 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
           events={events}
           homeClub={initialMatch.home_club}
           awayClub={initialMatch.away_club}
+          onFinalize={match.status === 'penalties' ? handleFinalizePenalties : undefined}
+          transitioning={transitioning !== null}
         />
       )}
-
-      {/* Opción penales — cruce eliminatorio empatado, sin penales registrados aún */}
-      {match.status === 'finished' &&
-        initialMatch.tournament.format === 'eliminatorias' &&
-        match.home_score === match.away_score &&
-        !events.some((e) => e.period === 'penalties') && (
-          <TieCrucesPanel
-            homeClub={initialMatch.home_club}
-            awayClub={initialMatch.away_club}
-            homeScore={match.home_score}
-            awayScore={match.away_score}
-            onGoToPenalties={() => handleTransition('penalties')}
-            transitioning={transitioning !== null}
-          />
-        )}
 
       {/* Aviso team admin */}
       {!isSuperAdmin && teamAdminClub && (
@@ -328,43 +329,12 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
   );
 }
 
-function TieCrucesPanel({ homeClub, awayClub, homeScore, awayScore, onGoToPenalties, transitioning }: {
-  homeClub: Club;
-  awayClub: Club;
-  homeScore: number;
-  awayScore: number;
-  onGoToPenalties: () => void;
-  transitioning: boolean;
-}) {
-  return (
-    <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-4 space-y-3">
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">⚖️</span>
-        <div>
-          <p className="text-sm font-bold text-amber-900">Empate en cruce eliminatorio</p>
-          <p className="text-xs text-amber-700">
-            {homeClub.short_name ?? homeClub.name} {homeScore} – {awayScore} {awayClub.short_name ?? awayClub.name}
-          </p>
-        </div>
-      </div>
-      <p className="text-xs text-amber-700">
-        ¿El ganador se define por tanda de penales?
-      </p>
-      <button
-        onClick={onGoToPenalties}
-        disabled={transitioning}
-        className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
-      >
-        {transitioning ? 'Cargando...' : '🎯 Ir a tanda de penales'}
-      </button>
-    </div>
-  );
-}
-
-function PenaltyBoard({ events, homeClub, awayClub }: {
+function PenaltyBoard({ events, homeClub, awayClub, onFinalize, transitioning }: {
   events: MatchDetail['events'];
   homeClub: Club;
   awayClub: Club;
+  onFinalize?: (winnerClubId: string) => void;
+  transitioning?: boolean;
 }) {
   const penaltyEvents = events.filter((e) => e.period === 'penalties');
   const homeKicks = penaltyEvents.filter((e) => e.club_id === homeClub.id);
@@ -419,6 +389,31 @@ function PenaltyBoard({ events, homeClub, awayClub }: {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Seleccionar ganador de la tanda */}
+      {onFinalize && (
+        <div className="mt-4 border-t border-blue-200 pt-4 space-y-2">
+          <p className="text-center text-[10px] font-bold uppercase tracking-widest text-blue-500">
+            Definir ganador de la tanda
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onFinalize(homeClub.id)}
+              disabled={transitioning}
+              className="rounded-xl bg-green-600 py-2.5 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              🏆 {homeClub.short_name ?? homeClub.name}
+            </button>
+            <button
+              onClick={() => onFinalize(awayClub.id)}
+              disabled={transitioning}
+              className="rounded-xl bg-green-600 py-2.5 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              🏆 {awayClub.short_name ?? awayClub.name}
+            </button>
           </div>
         </div>
       )}

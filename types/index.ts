@@ -172,6 +172,7 @@ export interface Match {
   notes: string | null;
   zone: string | null;
   round_label: string | null;
+  penalty_winner_club_id: string | null;
   created_at: string;
   updated_at: string;
 }
