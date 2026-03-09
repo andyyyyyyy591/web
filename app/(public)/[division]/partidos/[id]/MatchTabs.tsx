@@ -206,7 +206,7 @@ export function MatchTabs({ match, homePosition, awayPosition }: Props) {
               {live ? 'Esperando eventos del partido...' : 'El partido no ha comenzado'}
             </p>
           ) : (
-            <MatchTimeline events={match.events} homeClubId={match.home_club_id} />
+            <MatchTimeline events={match.events} homeClubId={match.home_club_id} status={match.status} />
           )
         )}
       </div>

@@ -1,4 +1,4 @@
-import type { MatchEventWithPlayers } from '@/types';
+import type { MatchEventWithPlayers, MatchStatus } from '@/types';
 import { EVENT_TYPE_LABELS, GOAL_TYPES, CARD_TYPES } from '@/types';
 import { getEventMinuteLabel } from '@/types';
 import { formatPlayerShort } from '@/lib/utils/format';
@@ -6,6 +6,36 @@ import { formatPlayerShort } from '@/lib/utils/format';
 interface MatchTimelineProps {
   events: MatchEventWithPlayers[];
   homeClubId: string;
+  status?: MatchStatus;
+}
+
+type TimelineItem =
+  | { kind: 'event'; event: MatchEventWithPlayers }
+  | { kind: 'divider'; label: string; variant?: 'final' };
+
+function buildTimeline(events: MatchEventWithPlayers[], status?: MatchStatus): TimelineItem[] {
+  const items: TimelineItem[] = [];
+  let lastPeriod: string | null = null;
+
+  for (const event of events) {
+    const period = event.period;
+
+    if (lastPeriod !== null && period !== lastPeriod) {
+      if (period === 'extra_time_first') {
+        items.push({ kind: 'divider', label: 'Prórroga' });
+      } else if (period === 'penalties') {
+        items.push({ kind: 'divider', label: 'Penales' });
+      }
+    }
+    lastPeriod = period;
+    items.push({ kind: 'event', event });
+  }
+
+  if (status === 'finished') {
+    items.push({ kind: 'divider', label: 'Fin del partido', variant: 'final' });
+  }
+
+  return items;
 }
 
 function EventIcon({ type }: { type: string }) {
@@ -18,15 +48,36 @@ function EventIcon({ type }: { type: string }) {
   return null;
 }
 
-export function MatchTimeline({ events, homeClubId }: MatchTimelineProps) {
+function PeriodDivider({ label, variant }: { label: string; variant?: 'final' }) {
+  const isFinal = variant === 'final';
+  return (
+    <div className="flex items-center gap-3 px-3 py-3">
+      <div className={`h-px flex-1 ${isFinal ? 'bg-border' : 'bg-border'}`} />
+      <span className={`text-[10px] font-bold uppercase tracking-widest ${isFinal ? 'text-secondary' : 'text-accent'}`}>
+        {isFinal ? '🏁 ' : ''}{label}
+      </span>
+      <div className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
+
+export function MatchTimeline({ events, homeClubId, status }: MatchTimelineProps) {
   if (events.length === 0) {
-    return <p className="py-8 text-center text-sm text-slate-400">Sin eventos registrados</p>;
+    return <p className="py-8 text-center text-sm text-secondary">Sin eventos registrados</p>;
   }
+
+  const items = buildTimeline(events, status);
 
   return (
     <div className="space-y-1 py-2">
-      {events.map((event) => {
+      {items.map((item, i) => {
+        if (item.kind === 'divider') {
+          return <PeriodDivider key={`divider-${i}`} label={item.label} variant={item.variant} />;
+        }
+
+        const event = item.event;
         const isHome = event.club_id === homeClubId;
+
         return (
           <div
             key={event.id}
@@ -34,28 +85,25 @@ export function MatchTimeline({ events, homeClubId }: MatchTimelineProps) {
               isHome ? 'flex-row' : 'flex-row-reverse'
             }`}
           >
-            {/* Minuto centrado */}
-            <span className="w-12 text-center text-xs font-bold text-slate-500">
+            <span className="w-12 text-center text-xs font-bold text-secondary">
               {getEventMinuteLabel(event)}
             </span>
 
-            {/* Ícono */}
             <EventIcon type={event.type} />
 
-            {/* Info */}
             <div className={`flex flex-col ${isHome ? 'items-start' : 'items-end'}`}>
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium text-primary">
                 {event.player
                   ? formatPlayerShort(event.player.first_name, event.player.last_name)
                   : EVENT_TYPE_LABELS[event.type]}
               </span>
               {event.type === 'substitution' && event.secondary_player && (
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-secondary">
                   ↑ {formatPlayerShort(event.secondary_player.first_name, event.secondary_player.last_name)}
                 </span>
               )}
               {!GOAL_TYPES.includes(event.type as never) && !CARD_TYPES.includes(event.type as never) && event.type !== 'substitution' && (
-                <span className="text-xs text-slate-400">{EVENT_TYPE_LABELS[event.type]}</span>
+                <span className="text-xs text-secondary">{EVENT_TYPE_LABELS[event.type]}</span>
               )}
             </div>
           </div>
