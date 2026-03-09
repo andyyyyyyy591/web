@@ -17,13 +17,13 @@ function formatScheduled(scheduledAt: string | null): { date: string; time: stri
 }
 
 const STATUS_SHORT: Record<string, string> = {
-  halftime:          'ET',
-  extra_time_break:  'Desc.',
-  extra_time_second: 'P.E.2',
-  penalties:         'Pen.',
-  finished:          'FIN',
-  postponed:         'POST.',
-  cancelled:         'CANC.',
+  halftime:          'Entretiempo',
+  extra_time_break:  'Desc. ET',
+  extra_time_second: 'Prórroga 2',
+  penalties:         'Penales',
+  finished:          'Final',
+  postponed:         'Postergado',
+  cancelled:         'Cancelado',
 };
 
 function LiveMinute({ match }: { match: MatchWithClubs }) {
@@ -41,9 +41,26 @@ function LiveMinute({ match }: { match: MatchWithClubs }) {
     : `${clock.minute}'`;
 
   return (
-    <div className="flex items-center gap-1 mt-0.5">
+    <div className="flex items-center gap-1">
       <span className="live-dot" style={{ width: 5, height: 5 }} />
       <span className="text-[10px] font-bold text-live">{display}</span>
+    </div>
+  );
+}
+
+function ClubLogo({ url, name, size = 28 }: { url: string | null; name: string; size?: number }) {
+  if (url) {
+    return (
+      <Image src={url} alt={name} width={size} height={size}
+        className="rounded-full object-contain shrink-0" style={{ width: size, height: size }} />
+    );
+  }
+  return (
+    <div
+      className="flex items-center justify-center rounded-full bg-elevated text-secondary font-bold shrink-0"
+      style={{ width: size, height: size, fontSize: size * 0.38 }}
+    >
+      {name.slice(0, 2).toUpperCase()}
     </div>
   );
 }
@@ -52,85 +69,98 @@ interface Props {
   match: MatchWithClubs;
 }
 
-function ClubLogo({ url, name, size = 28 }: { url: string | null; name: string; size?: number }) {
-  if (url) {
-    return (
-      <Image src={url} alt={name} width={size} height={size}
-        className="rounded-full object-contain" style={{ width: size, height: size }} />
-    );
-  }
-  return (
-    <div
-      className="flex items-center justify-center rounded-full bg-elevated text-secondary font-bold"
-      style={{ width: size, height: size, fontSize: size * 0.38 }}
-    >
-      {name.slice(0, 2).toUpperCase()}
-    </div>
-  );
-}
-
 export function MatchRow({ match }: Props) {
   const live = isLive(match.status);
   const finished = match.status === 'finished';
+  const scheduled = match.status === 'scheduled';
+  const hasScore = !scheduled && match.status !== 'postponed' && match.status !== 'cancelled';
   const divisionSlug = match.tournament.division.slug;
   const href = `/${divisionSlug}/partidos/${match.id}`;
+  const { date, time } = formatScheduled(match.scheduled_at);
 
   return (
-    <Link href={href} className="flex items-center gap-2 px-4 py-3 hover:bg-elevated/60 transition-colors">
-      {/* Home */}
-      <div className="flex flex-1 items-center justify-end gap-2 min-w-0">
-        <span className={`truncate text-sm font-semibold text-right ${finished ? 'text-secondary' : 'text-primary'}`}>
-          {match.home_club.name}
-        </span>
-        <ClubLogo url={match.home_club.logo_url} name={match.home_club.name} />
-      </div>
+    <Link
+      href={href}
+      className={`block rounded-2xl border px-4 py-3 transition-colors hover:bg-elevated/60 ${
+        live ? 'border-live/30 bg-live/5' : 'border-border bg-card'
+      }`}
+    >
+      {/* Top row: division + date + status */}
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-[11px] text-secondary min-w-0">
+          <span className="truncate">{match.tournament.division.label}</span>
+          {(match as any).match_date?.number && (
+            <span className="shrink-0">· Fecha {(match as any).match_date.number}</span>
+          )}
+          {(match as any).round_label && (
+            <span className="shrink-0 font-semibold">· {(match as any).round_label}</span>
+          )}
+        </div>
 
-      {/* Center */}
-      <div className="flex w-20 flex-shrink-0 flex-col items-center">
+        {/* Status / time badge */}
         {live ? (
-          <>
-            <div className="flex items-center gap-1.5 text-base font-bold text-primary">
-              <span>{match.home_score}</span>
-              <span className="text-secondary">–</span>
-              <span>{match.away_score}</span>
-            </div>
-            {['first_half', 'second_half', 'extra_time_first', 'extra_time_second'].includes(match.status) ? (
-              <LiveMinute match={match} />
-            ) : (
-              <div className="flex items-center gap-1 mt-0.5">
-                <span className="live-dot" style={{ width: 5, height: 5 }} />
-                <span className="text-[10px] font-bold text-live">{STATUS_SHORT[match.status] ?? 'EN VIVO'}</span>
-              </div>
-            )}
-          </>
-        ) : finished ? (
-          <div className="flex items-center gap-1.5 text-base font-bold text-secondary">
-            <span>{match.home_score}</span>
-            <span>–</span>
-            <span>{match.away_score}</span>
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="live-dot" style={{ width: 6, height: 6 }} />
+            <span className="text-[11px] font-bold text-live">
+              {STATUS_SHORT[match.status] ?? 'EN VIVO'}
+            </span>
           </div>
-        ) : match.status === 'scheduled' ? (
-          (() => {
-            const { date, time } = formatScheduled(match.scheduled_at);
-            return (
-              <div className="flex flex-col items-center leading-tight">
-                {date && <span className="text-[10px] text-secondary">{date}</span>}
-                <span className="text-sm font-semibold text-primary">{time}</span>
-              </div>
-            );
-          })()
+        ) : scheduled ? (
+          <div className="flex items-center gap-1 shrink-0 text-[11px] text-secondary">
+            {date && <span>{date}</span>}
+            <span className="font-semibold text-primary">{time}</span>
+          </div>
         ) : (
-          <span className="text-xs font-semibold text-secondary">{STATUS_SHORT[match.status] ?? match.status}</span>
+          <span className="shrink-0 text-[11px] font-semibold text-secondary">
+            {STATUS_SHORT[match.status] ?? match.status}
+          </span>
         )}
       </div>
 
-      {/* Away */}
-      <div className="flex flex-1 items-center justify-start gap-2 min-w-0">
-        <ClubLogo url={match.away_club.logo_url} name={match.away_club.name} />
-        <span className={`truncate text-sm font-semibold ${finished ? 'text-secondary' : 'text-primary'}`}>
-          {match.away_club.name}
-        </span>
+      {/* Teams + score */}
+      <div className="flex items-center justify-between gap-2">
+        {/* Home */}
+        <div className="flex flex-1 items-center justify-end gap-2 min-w-0">
+          <span className={`truncate text-sm font-semibold text-right ${finished ? 'text-secondary' : 'text-primary'}`}>
+            {match.home_club.name}
+          </span>
+          <ClubLogo url={match.home_club.logo_url} name={match.home_club.name} />
+        </div>
+
+        {/* Score pill */}
+        <div className="flex shrink-0 items-center gap-1.5 rounded-xl bg-elevated px-3 py-1.5 tabular-nums">
+          {live ? (
+            <>
+              <span className="text-lg font-black text-primary">{match.home_score}</span>
+              <span className="text-secondary">—</span>
+              <span className="text-lg font-black text-primary">{match.away_score}</span>
+            </>
+          ) : hasScore ? (
+            <>
+              <span className={`text-lg font-black ${finished ? 'text-secondary' : 'text-primary'}`}>{match.home_score}</span>
+              <span className="text-secondary">—</span>
+              <span className={`text-lg font-black ${finished ? 'text-secondary' : 'text-primary'}`}>{match.away_score}</span>
+            </>
+          ) : (
+            <span className="text-sm font-medium text-secondary px-1">vs</span>
+          )}
+        </div>
+
+        {/* Away */}
+        <div className="flex flex-1 items-center justify-start gap-2 min-w-0">
+          <ClubLogo url={match.away_club.logo_url} name={match.away_club.name} />
+          <span className={`truncate text-sm font-semibold ${finished ? 'text-secondary' : 'text-primary'}`}>
+            {match.away_club.name}
+          </span>
+        </div>
       </div>
+
+      {/* Live clock row (when active) */}
+      {live && ['first_half', 'second_half', 'extra_time_first', 'extra_time_second'].includes(match.status) && (
+        <div className="mt-2 flex justify-center">
+          <LiveMinute match={match} />
+        </div>
+      )}
     </Link>
   );
 }
