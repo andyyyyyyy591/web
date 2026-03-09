@@ -6,7 +6,6 @@ import { createNews } from '@/lib/actions/news';
 import { Button } from '@/components/ui/Button';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { BackButton } from '@/components/ui/BackButton';
-import type { Club } from '@/types';
 
 function toSlug(str: string) {
   return str
@@ -17,7 +16,7 @@ function toSlug(str: string) {
     .slice(0, 100);
 }
 
-export function NuevaNoticiaForm({ clubs }: { clubs: Club[] }) {
+export function NuevaNoticiaForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +26,6 @@ export function NuevaNoticiaForm({ clubs }: { clubs: Club[] }) {
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [clubId, setClubId] = useState('');
   const [publishedAt, setPublishedAt] = useState(new Date().toISOString().slice(0, 16));
   const [isPublished, setIsPublished] = useState(false);
 
@@ -46,7 +44,6 @@ export function NuevaNoticiaForm({ clubs }: { clubs: Club[] }) {
       content,
       excerpt: excerpt || undefined,
       image_url: imageUrl || undefined,
-      club_id: clubId || null,
       published_at: publishedAt ? new Date(publishedAt).toISOString() : undefined,
       is_published: isPublished,
     });
@@ -64,15 +61,14 @@ export function NuevaNoticiaForm({ clubs }: { clubs: Club[] }) {
         <h1 className="text-2xl font-bold text-slate-900">Nueva noticia</h1>
       </div>
 
+      <p className="text-sm text-slate-500 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2">
+        Los clubes mencionados en el título o contenido se asocian automáticamente.
+      </p>
+
       <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
-        <ImageUpload
-          bucket="news"
-          currentUrl={imageUrl || null}
-          onUploaded={setImageUrl}
-          label="Imagen destacada"
-        />
+        <ImageUpload bucket="news" currentUrl={imageUrl || null} onUploaded={setImageUrl} label="Imagen destacada" />
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Título *</label>
@@ -82,25 +78,13 @@ export function NuevaNoticiaForm({ clubs }: { clubs: Club[] }) {
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Slug *</label>
           <input required value={slug} onChange={(e) => setSlug(e.target.value)}
-            placeholder="mi-noticia-titulo"
-            className={`${inputCls} font-mono`} />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Club relacionado</label>
-          <select value={clubId} onChange={(e) => setClubId(e.target.value)} className={inputCls}>
-            <option value="">— General (sin club específico) —</option>
-            {clubs.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+            placeholder="mi-noticia-titulo" className={`${inputCls} font-mono`} />
         </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Resumen (opcional)</label>
           <input value={excerpt} onChange={(e) => setExcerpt(e.target.value)}
-            placeholder="Breve descripción para la lista de noticias"
-            className={inputCls} />
+            placeholder="Breve descripción para la lista de noticias" className={inputCls} />
         </div>
 
         <div>

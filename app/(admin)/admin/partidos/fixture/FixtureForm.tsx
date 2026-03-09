@@ -8,17 +8,16 @@ import { Button } from '@/components/ui/Button';
 import { BackButton } from '@/components/ui/BackButton';
 import type { TournamentWithRelations, Club, TournamentFormat } from '@/types';
 
-interface MatchRow {
+interface MatchRowData {
   homeClubId: string;
   awayClubId: string;
   scheduledAt: string;
   stadium: string;
-  zone: 'A' | 'B' | 'interzonal' | '';  // para formato zonas
-  roundLabel: string;                     // para formato eliminatorias
+  matchZone: 'zona_a' | 'zona_b' | 'interzonal' | '';
 }
 
-function emptyRow(): MatchRow {
-  return { homeClubId: '', awayClubId: '', scheduledAt: '', stadium: '', zone: '', roundLabel: '' };
+function emptyRow(): MatchRowData {
+  return { homeClubId: '', awayClubId: '', scheduledAt: '', stadium: '', matchZone: '' };
 }
 
 function roundRobinPairs(ids: string[]): [string, string][] {
@@ -53,9 +52,12 @@ export function FixtureForm({ tournaments, clubs }: Props) {
   const [fechaLabel, setFechaLabel] = useState('');
   const [matchDateId, setMatchDateId] = useState<string | null>(null);
 
-  const [rows, setRows] = useState<MatchRow[]>([emptyRow(), emptyRow()]);
+  const [rows, setRows] = useState<MatchRowData[]>([emptyRow(), emptyRow()]);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+
+  // Tournament clubs loaded when tournament is selected
+  const [tournamentClubs, setTournamentClubs] = useState<{ club_id: string; club_name: string; zone: string | null }[]>([]);
 
   const bySeasonId = tournaments.reduce<Record<string, TournamentWithRelations[]>>((acc, t) => {
     const key = t.season.id;
@@ -65,8 +67,29 @@ export function FixtureForm({ tournaments, clubs }: Props) {
   }, {});
 
   const selectedTournament = tournaments.find((t) => t.id === tournamentId);
-  const tournamentFormat: TournamentFormat = (selectedTournament as any)?.format ?? 'todos_contra_todos';
+
+  // Derive format from division slug first (primera/reserva = zonas)
+  const divSlug = selectedTournament?.division?.slug ?? '';
+  const tournamentFormat: TournamentFormat =
+    (divSlug === 'primera' || divSlug === 'reserva')
+      ? 'zonas'
+      : (selectedTournament?.format ?? 'todos_contra_todos');
   const badge = FORMAT_BADGE[tournamentFormat];
+
+  // Clubs filtered to this tournament (or all if not loaded yet)
+  const availableClubs = tournamentClubs.length > 0
+    ? clubs.filter((c) => tournamentClubs.some((tc) => tc.club_id === c.id))
+    : clubs;
+
+  async function handleTournamentChange(id: string) {
+    setTournamentId(id);
+    if (id) {
+      const tc = await getTournamentClubsForFixture(id);
+      setTournamentClubs(tc);
+    } else {
+      setTournamentClubs([]);
+    }
+  }
 
   async function handleCreateFecha(e: React.FormEvent) {
     e.preventDefault();
@@ -83,33 +106,34 @@ export function FixtureForm({ tournaments, clubs }: Props) {
   async function handleAutoGenerate() {
     setGenerating(true);
     setGenerateError(null);
-    const tournamentClubs = await getTournamentClubsForFixture(tournamentId);
+    const tc = await getTournamentClubsForFixture(tournamentId);
+    setTournamentClubs(tc);
     setGenerating(false);
 
-    if (tournamentClubs.length < 2) {
+    if (tc.length < 2) {
       setGenerateError('El torneo necesita al menos 2 equipos registrados');
       return;
     }
 
     if (tournamentFormat === 'zonas') {
-      const a = tournamentClubs.filter((c) => c.zone === 'A');
-      const b = tournamentClubs.filter((c) => c.zone === 'B');
+      const a = tc.filter((c) => c.zone === 'A');
+      const b = tc.filter((c) => c.zone === 'B');
       if (a.length < 2 && b.length < 2) {
         setGenerateError('Asigná los equipos a Zona A o Zona B en la gestión del torneo');
         return;
       }
-      const generated: MatchRow[] = [
-        ...roundRobinPairs(a.map((c) => c.club_id)).map(([h, aw]) => ({ ...emptyRow(), homeClubId: h, awayClubId: aw, zone: 'A' as const })),
-        ...roundRobinPairs(b.map((c) => c.club_id)).map(([h, aw]) => ({ ...emptyRow(), homeClubId: h, awayClubId: aw, zone: 'B' as const })),
+      const generated: MatchRowData[] = [
+        ...roundRobinPairs(a.map((c) => c.club_id)).map(([h, aw]) => ({ ...emptyRow(), homeClubId: h, awayClubId: aw, matchZone: 'zona_a' as const })),
+        ...roundRobinPairs(b.map((c) => c.club_id)).map(([h, aw]) => ({ ...emptyRow(), homeClubId: h, awayClubId: aw, matchZone: 'zona_b' as const })),
       ];
       setRows(generated.length ? generated : [emptyRow()]);
     } else {
-      const pairs = roundRobinPairs(tournamentClubs.map((c) => c.club_id));
+      const pairs = roundRobinPairs(tc.map((c) => c.club_id));
       setRows(pairs.length ? pairs.map(([h, aw]) => ({ ...emptyRow(), homeClubId: h, awayClubId: aw })) : [emptyRow()]);
     }
   }
 
-  function updateRow(i: number, field: keyof MatchRow, value: string) {
+  function updateRow(i: number, field: keyof MatchRowData, value: string) {
     setRows((prev) => prev.map((r, idx) => idx === i ? { ...r, [field]: value } : r));
   }
 
@@ -129,9 +153,7 @@ export function FixtureForm({ tournaments, clubs }: Props) {
       away_club_id: r.awayClubId,
       scheduled_at: r.scheduledAt ? new Date(r.scheduledAt).toISOString() : undefined,
       stadium: r.stadium || undefined,
-      // interzonal: no se guarda zone (c/equipo suma en su propia zona por tournament_clubs)
-      zone: (r.zone && r.zone !== 'interzonal') ? r.zone : undefined,
-      round_label: r.roundLabel || undefined,
+      match_zone: (r.matchZone || undefined) as 'zona_a' | 'zona_b' | 'interzonal' | undefined,
     }));
     const result = await createMatchesBatch(payload);
     setLoading(false);
@@ -188,9 +210,8 @@ export function FixtureForm({ tournaments, clubs }: Props) {
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">Torneo *</label>
               <select
-                required
-                value={tournamentId}
-                onChange={(e) => setTournamentId(e.target.value)}
+                required value={tournamentId}
+                onChange={(e) => handleTournamentChange(e.target.value)}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
               >
                 <option value="">— Seleccionar torneo —</option>
@@ -222,7 +243,7 @@ export function FixtureForm({ tournaments, clubs }: Props) {
                 <label className="mb-1 block text-sm font-medium text-slate-700">Etiqueta (opcional)</label>
                 <input
                   value={fechaLabel} onChange={(e) => setFechaLabel(e.target.value)}
-                  placeholder="Semifinal, Fecha 5…"
+                  placeholder="Fecha 1, Apertura…"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
                 />
               </div>
@@ -263,13 +284,11 @@ export function FixtureForm({ tournaments, clubs }: Props) {
           <form onSubmit={handleSave} className="space-y-3">
             {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
-            {/* Encabezado columnas */}
             <MatchRowHeader format={tournamentFormat} />
 
-            {/* Filas agrupadas por zona si aplica */}
             <MatchRowList
               rows={rows}
-              clubs={clubs}
+              clubs={availableClubs}
               format={tournamentFormat}
               onUpdate={updateRow}
               onRemove={removeRow}
@@ -315,18 +334,6 @@ function MatchRowHeader({ format }: { format: TournamentFormat }) {
       </div>
     );
   }
-  if (format === 'eliminatorias') {
-    return (
-      <div className="grid grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 px-1">
-        <span className="col-span-2">Cruce</span>
-        <span className="col-span-3">Local</span>
-        <span className="col-span-3">Visitante</span>
-        <span className="col-span-2">Estadio</span>
-        <span className="col-span-1">Hora</span>
-        <span className="col-span-1" />
-      </div>
-    );
-  }
   return (
     <div className="grid grid-cols-12 gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400 px-1">
       <span className="col-span-3">Local</span>
@@ -338,13 +345,13 @@ function MatchRowHeader({ format }: { format: TournamentFormat }) {
   );
 }
 
-// ─── Lista de filas con separadores por zona ─────────────────────────────────
+// ─── Lista de filas ───────────────────────────────────────────────────────────
 
 function MatchRowList({ rows, clubs, format, onUpdate, onRemove }: {
-  rows: MatchRow[];
+  rows: MatchRowData[];
   clubs: Club[];
   format: TournamentFormat;
-  onUpdate: (i: number, field: keyof MatchRow, val: string) => void;
+  onUpdate: (i: number, field: keyof MatchRowData, val: string) => void;
   onRemove: (i: number) => void;
 }) {
   if (format !== 'zonas') {
@@ -358,13 +365,13 @@ function MatchRowList({ rows, clubs, format, onUpdate, onRemove }: {
     );
   }
 
-  // Agrupar por zona para mostrar separadores
-  const sections: { zone: 'A' | 'B' | 'interzonal' | ''; entries: { row: MatchRow; index: number }[] }[] = [];
+  // Group by zone for visual separators
+  const sections: { zone: string; entries: { row: MatchRowData; index: number }[] }[] = [];
   rows.forEach((row, index) => {
-    const z = row.zone ?? '';
+    const z = row.matchZone || '';
     const existing = sections.find((s) => s.zone === z);
     if (existing) existing.entries.push({ row, index });
-    else sections.push({ zone: z as any, entries: [{ row, index }] });
+    else sections.push({ zone: z, entries: [{ row, index }] });
   });
 
   return (
@@ -373,10 +380,10 @@ function MatchRowList({ rows, clubs, format, onUpdate, onRemove }: {
         <div key={section.zone || 'sin'} className="space-y-2">
           {section.zone === 'interzonal' ? (
             <p className="text-xs font-bold uppercase tracking-wide text-teal-600 pt-1">Interzonal</p>
-          ) : section.zone ? (
-            <p className="text-xs font-bold uppercase tracking-wide text-purple-600 pt-1">
-              Zona {section.zone}
-            </p>
+          ) : section.zone === 'zona_a' ? (
+            <p className="text-xs font-bold uppercase tracking-wide text-purple-600 pt-1">Zona A</p>
+          ) : section.zone === 'zona_b' ? (
+            <p className="text-xs font-bold uppercase tracking-wide text-purple-600 pt-1">Zona B</p>
           ) : (
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400 pt-1">Sin zona</p>
           )}
@@ -393,11 +400,11 @@ function MatchRowList({ rows, clubs, format, onUpdate, onRemove }: {
 // ─── Fila individual ─────────────────────────────────────────────────────────
 
 function MatchRowInput({ row, index, clubs, format, onUpdate, onRemove, canRemove }: {
-  row: MatchRow;
+  row: MatchRowData;
   index: number;
   clubs: Club[];
   format: TournamentFormat;
-  onUpdate: (i: number, field: keyof MatchRow, val: string) => void;
+  onUpdate: (i: number, field: keyof MatchRowData, val: string) => void;
   onRemove: (i: number) => void;
   canRemove: boolean;
 }) {
@@ -415,8 +422,7 @@ function MatchRowInput({ row, index, clubs, format, onUpdate, onRemove, canRemov
   );
 
   const stadiumInput = (
-    <input
-      type="text" value={row.stadium}
+    <input type="text" value={row.stadium}
       onChange={(e) => onUpdate(index, 'stadium', e.target.value)}
       placeholder="Estadio…"
       className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none"
@@ -424,8 +430,7 @@ function MatchRowInput({ row, index, clubs, format, onUpdate, onRemove, canRemov
   );
 
   const timeInput = (
-    <input
-      type="datetime-local" value={row.scheduledAt}
+    <input type="datetime-local" value={row.scheduledAt}
       onChange={(e) => onUpdate(index, 'scheduledAt', e.target.value)}
       className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
     />
@@ -445,13 +450,13 @@ function MatchRowInput({ row, index, clubs, format, onUpdate, onRemove, canRemov
       <div className="grid grid-cols-12 gap-2 items-center">
         <div className="col-span-1">
           <select
-            value={row.zone}
-            onChange={(e) => onUpdate(index, 'zone', e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-1 py-2 text-sm font-semibold focus:border-purple-500 focus:outline-none text-center"
+            value={row.matchZone}
+            onChange={(e) => onUpdate(index, 'matchZone', e.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-1 py-2 text-xs font-semibold focus:border-purple-500 focus:outline-none text-center"
           >
             <option value="">—</option>
-            <option value="A">A</option>
-            <option value="B">B</option>
+            <option value="zona_a">A</option>
+            <option value="zona_b">B</option>
             <option value="interzonal">INT</option>
           </select>
         </div>
@@ -459,26 +464,6 @@ function MatchRowInput({ row, index, clubs, format, onUpdate, onRemove, canRemov
         <div className="col-span-3">{clubSelect('awayClubId', '— Visitante —')}</div>
         <div className="col-span-2">{stadiumInput}</div>
         <div className="col-span-2">{timeInput}</div>
-        <div className="col-span-1 flex justify-center">{removeBtn}</div>
-      </div>
-    );
-  }
-
-  if (format === 'eliminatorias') {
-    return (
-      <div className="grid grid-cols-12 gap-2 items-center">
-        <div className="col-span-2">
-          <input
-            type="text" value={row.roundLabel}
-            onChange={(e) => onUpdate(index, 'roundLabel', e.target.value)}
-            placeholder="Final, SF1…"
-            className="w-full rounded-lg border border-slate-300 px-2 py-2 text-sm focus:border-orange-500 focus:outline-none"
-          />
-        </div>
-        <div className="col-span-3">{clubSelect('homeClubId', '— Local —')}</div>
-        <div className="col-span-3">{clubSelect('awayClubId', '— Visitante —')}</div>
-        <div className="col-span-2">{stadiumInput}</div>
-        <div className="col-span-1">{timeInput}</div>
         <div className="col-span-1 flex justify-center">{removeBtn}</div>
       </div>
     );

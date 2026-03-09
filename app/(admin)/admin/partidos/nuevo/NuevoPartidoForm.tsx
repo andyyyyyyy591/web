@@ -6,23 +6,9 @@ import { createMatch } from '@/lib/actions/matches';
 import { getTournamentClubsForFixture } from '@/lib/actions/tournaments';
 import { Button } from '@/components/ui/Button';
 import { BackButton } from '@/components/ui/BackButton';
-import type { TournamentWithRelations, Club, TournamentFormat } from '@/types';
+import type { TournamentWithRelations, Club } from '@/types';
 
-const RONDAS = ['Cuartos de final', 'Semifinal', 'Final', 'Otro…'];
-
-type MatchZone = 'zona_a' | 'zona_b' | 'interzonal';
-
-const ZONE_OPTIONS: { value: MatchZone; label: string }[] = [
-  { value: 'zona_a',     label: 'Zona A' },
-  { value: 'zona_b',     label: 'Zona B' },
-  { value: 'interzonal', label: 'Interzonal' },
-];
-
-const FORMAT_BADGE: Record<TournamentFormat, { label: string; color: string }> = {
-  todos_contra_todos: { label: 'Todos contra todos', color: 'bg-blue-100 text-blue-700' },
-  zonas:              { label: 'Zona A / Zona B',    color: 'bg-purple-100 text-purple-700' },
-  eliminatorias:      { label: 'Eliminatorias',      color: 'bg-orange-100 text-orange-700' },
-};
+const RONDAS = ['Cuartos de final', 'Semifinal', 'Final'];
 
 interface Props {
   tournaments: TournamentWithRelations[];
@@ -35,22 +21,14 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const [tournamentId, setTournamentId] = useState('');
+  const [instancia, setInstancia] = useState('');
+  const [instanciaCustom, setInstanciaCustom] = useState('');
   const [homeClubId, setHomeClubId] = useState('');
   const [awayClubId, setAwayClubId] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
   const [stadium, setStadium] = useState('');
-
   const [referee, setReferee] = useState('');
-  const [refereeAssistant1, setRefereeAssistant1] = useState('');
-  const [refereeAssistant2, setRefereeAssistant2] = useState('');
-  const [refereeFourth, setRefereeFourth] = useState('');
 
-  // round_label: used as jornada for tct/zonas, instancia for eliminatorias
-  const [rondaSelect, setRondaSelect] = useState('');
-  const [rondaCustom, setRondaCustom] = useState('');
-  const [jornada, setJornada] = useState('');
-
-  const [matchZone, setMatchZone] = useState<MatchZone | null>(null);
   const [tournamentClubs, setTournamentClubs] = useState<{ club_id: string; club_name: string; zone: string | null }[]>([]);
 
   const bySeasonId = tournaments.reduce<Record<string, TournamentWithRelations[]>>((acc, t) => {
@@ -60,33 +38,15 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
     return acc;
   }, {});
 
-  const selectedTournament = tournaments.find((t) => t.id === tournamentId);
-
-  // Derive format from division slug first (business rule), then fall back to stored format
-  const divSlug = selectedTournament?.division?.slug ?? '';
-  const format: TournamentFormat =
-    (divSlug === 'primera' || divSlug === 'reserva')
-      ? 'zonas'
-      : (selectedTournament?.format ?? 'todos_contra_todos');
-
-  const badge = FORMAT_BADGE[format];
-
-  function autoDetectZone(homeId: string, awayId: string, tc = tournamentClubs): MatchZone | null {
-    const homeZone = tc.find((t) => t.club_id === homeId)?.zone;
-    const awayZone = tc.find((t) => t.club_id === awayId)?.zone;
-    if (!homeZone && !awayZone) return null;
-    if (homeZone === 'A' && awayZone === 'A') return 'zona_a';
-    if (homeZone === 'B' && awayZone === 'B') return 'zona_b';
-    return 'interzonal';
-  }
+  // Show all tournament clubs (no zone filter)
+  const availableClubs = tournamentClubs.length > 0
+    ? clubs.filter((c) => tournamentClubs.some((t) => t.club_id === c.id))
+    : clubs;
 
   async function handleTournamentChange(id: string) {
     setTournamentId(id);
     setHomeClubId('');
     setAwayClubId('');
-    setRondaSelect('');
-    setJornada('');
-    setMatchZone(null);
     if (id) {
       const tc = await getTournamentClubsForFixture(id);
       setTournamentClubs(tc);
@@ -95,28 +55,7 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
     }
   }
 
-  function handleHomeClubChange(id: string) {
-    setHomeClubId(id);
-    if (format === 'zonas' && id && awayClubId) setMatchZone(autoDetectZone(id, awayClubId));
-  }
-
-  function handleAwayClubChange(id: string) {
-    setAwayClubId(id);
-    if (format === 'zonas' && homeClubId && id) setMatchZone(autoDetectZone(homeClubId, id));
-  }
-
-  const availableClubs = tournamentClubs.length > 0
-    ? clubs.filter((c) => tournamentClubs.some((t) => t.club_id === c.id))
-    : clubs;
-
-  function clubLabel(clubId: string) {
-    const tc = tournamentClubs.find((t) => t.club_id === clubId);
-    return tc?.zone ? ` (Zona ${tc.zone})` : '';
-  }
-
-  const roundLabel = format === 'eliminatorias'
-    ? (rondaSelect === 'Otro…' ? rondaCustom : rondaSelect)
-    : jornada;
+  const roundLabel = instancia === 'Otro…' ? instanciaCustom : instancia;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -130,11 +69,7 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
       scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
       stadium: stadium || undefined,
       referee: referee || undefined,
-      referee_assistant_1: refereeAssistant1 || undefined,
-      referee_assistant_2: refereeAssistant2 || undefined,
-      referee_fourth: refereeFourth || undefined,
       round_label: roundLabel || undefined,
-      match_zone: matchZone ?? undefined,
     });
     setLoading(false);
     if (result.error) setError(result.error);
@@ -147,7 +82,7 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
     <div className="max-w-lg space-y-4">
       <div className="flex items-center gap-3">
         <BackButton href="/admin/partidos" />
-        <h1 className="text-2xl font-bold text-slate-900">Nuevo partido</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Nuevo cruce</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
@@ -166,146 +101,99 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
               </optgroup>
             ))}
           </select>
-          {selectedTournament && (
-            <span className={`mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.color}`}>
-              {badge.label}
-            </span>
-          )}
         </div>
 
-        {/* Zona (solo para formato 'zonas') */}
-        {format === 'zonas' && tournamentId && (
+        {/* Instancia */}
+        {tournamentId && (
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">Zona del partido</label>
-            <div className="flex gap-2">
-              {ZONE_OPTIONS.map((z) => (
-                <button
-                  key={z.value}
-                  type="button"
-                  onClick={() => setMatchZone(z.value)}
-                  className={`flex-1 rounded-xl border-2 py-2.5 text-xs font-bold transition-colors ${
-                    matchZone === z.value
-                      ? z.value === 'interzonal'
-                        ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : 'border-purple-500 bg-purple-50 text-purple-700'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                  }`}
-                >
-                  {z.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Instancia (solo eliminatorias) */}
-        {format === 'eliminatorias' && tournamentId && (
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Instancia</label>
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              {RONDAS.filter((r) => r !== 'Otro…').map((r) => (
+            <label className="mb-2 block text-sm font-medium text-slate-700">Instancia</label>
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              {RONDAS.map((r) => (
                 <button
                   key={r} type="button"
-                  onClick={() => setRondaSelect(r)}
+                  onClick={() => setInstancia(r)}
                   className={`rounded-xl border-2 px-2 py-2.5 text-xs font-semibold transition-colors text-center ${
-                    rondaSelect === r ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                    instancia === r
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
                   }`}
                 >
                   {r}
                 </button>
               ))}
-              <button
-                type="button"
-                onClick={() => setRondaSelect('Otro…')}
-                className={`rounded-xl border-2 px-2 py-2.5 text-xs font-semibold transition-colors text-center ${
-                  rondaSelect === 'Otro…' ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                }`}
-              >
-                Otro…
-              </button>
             </div>
-            {rondaSelect === 'Otro…' && (
+            <button
+              type="button"
+              onClick={() => setInstancia('Otro…')}
+              className={`w-full rounded-xl border-2 px-2 py-2 text-xs font-semibold transition-colors text-center ${
+                instancia === 'Otro…'
+                  ? 'border-orange-500 bg-orange-50 text-orange-700'
+                  : 'border-slate-200 text-slate-600 hover:border-slate-300'
+              }`}
+            >
+              Otro…
+            </button>
+            {instancia === 'Otro…' && (
               <input
-                type="text" value={rondaCustom} onChange={(e) => setRondaCustom(e.target.value)}
+                type="text" value={instanciaCustom} onChange={(e) => setInstanciaCustom(e.target.value)}
                 placeholder="Ej: 3er puesto, Repechaje…"
-                className={inputCls}
+                className={`${inputCls} mt-2`}
                 autoFocus
               />
             )}
           </div>
         )}
 
-        {/* Jornada (todos_contra_todos y zonas) */}
-        {(format === 'todos_contra_todos' || format === 'zonas') && tournamentId && (
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Jornada (opcional)</label>
-            <input
-              type="text" value={jornada} onChange={(e) => setJornada(e.target.value)}
-              placeholder="Ej: Fecha 1, Fecha 2…"
-              className={inputCls}
-            />
+        {/* Equipos — todos los del torneo sin filtrar por zona */}
+        {tournamentId && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Local *</label>
+              <select required value={homeClubId} onChange={(e) => setHomeClubId(e.target.value)} className={inputCls}>
+                <option value="">— Local —</option>
+                {availableClubs.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Visitante *</label>
+              <select required value={awayClubId} onChange={(e) => setAwayClubId(e.target.value)} className={inputCls}>
+                <option value="">— Visitante —</option>
+                {availableClubs.filter((c) => c.id !== homeClubId).map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
 
-        {/* Equipos */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Local *</label>
-            <select required value={homeClubId} onChange={(e) => handleHomeClubChange(e.target.value)} className={inputCls}>
-              <option value="">— Local —</option>
-              {availableClubs.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}{clubLabel(c.id)}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Visitante *</label>
-            <select required value={awayClubId} onChange={(e) => handleAwayClubChange(e.target.value)} className={inputCls}>
-              <option value="">— Visitante —</option>
-              {availableClubs.filter((c) => c.id !== homeClubId).map((c) => (
-                <option key={c.id} value={c.id}>{c.name}{clubLabel(c.id)}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Fecha, estadio */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Fecha y hora</label>
-            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className={inputCls} />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Estadio</label>
-            <input type="text" value={stadium} onChange={(e) => setStadium(e.target.value)} placeholder="Ej. Estadio Municipal" className={inputCls} />
-          </div>
-        </div>
-
-        {/* Árbitros */}
-        <div className="space-y-3">
-          <p className="text-sm font-semibold text-slate-700">Árbitros</p>
+        {/* Fecha y estadio */}
+        {tournamentId && (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Principal</label>
-              <input type="text" value={referee} onChange={(e) => setReferee(e.target.value)} placeholder="Nombre" className={inputCls} />
+              <label className="mb-1 block text-sm font-medium text-slate-700">Fecha y hora</label>
+              <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className={inputCls} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">4° árbitro</label>
-              <input type="text" value={refereeFourth} onChange={(e) => setRefereeFourth(e.target.value)} placeholder="Nombre" className={inputCls} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Asistente 1</label>
-              <input type="text" value={refereeAssistant1} onChange={(e) => setRefereeAssistant1(e.target.value)} placeholder="Nombre" className={inputCls} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Asistente 2</label>
-              <input type="text" value={refereeAssistant2} onChange={(e) => setRefereeAssistant2(e.target.value)} placeholder="Nombre" className={inputCls} />
+              <label className="mb-1 block text-sm font-medium text-slate-700">Estadio</label>
+              <input type="text" value={stadium} onChange={(e) => setStadium(e.target.value)} placeholder="Ej. Estadio Municipal" className={inputCls} />
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Árbitro principal */}
+        {tournamentId && (
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Árbitro principal</label>
+            <input type="text" value={referee} onChange={(e) => setReferee(e.target.value)} placeholder="Nombre del árbitro" className={inputCls} />
+          </div>
+        )}
 
         <div className="flex gap-3 pt-2 border-t border-slate-100">
-          <Button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Crear partido'}</Button>
+          <Button type="submit" disabled={loading || !tournamentId || !homeClubId || !awayClubId}>
+            {loading ? 'Guardando...' : 'Crear cruce'}
+          </Button>
           <Button type="button" variant="secondary" onClick={() => router.push('/admin/partidos')}>Cancelar</Button>
         </div>
       </form>

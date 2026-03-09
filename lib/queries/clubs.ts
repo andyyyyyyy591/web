@@ -60,11 +60,11 @@ export async function getNewsByClub(clubId: string, limit = 10): Promise<News[]>
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('news')
-    .select('*')
-    .eq('club_id', clubId)
+    .select('*, news_clubs!inner(club_id)')
+    .eq('news_clubs.club_id', clubId)
     .eq('is_published', true)
     .order('published_at', { ascending: false })
     .limit(limit);
   if (error) return [];
-  return data;
+  return data.map(({ news_clubs: _nc, ...rest }) => rest) as News[];
 }

@@ -506,7 +506,6 @@ export interface News {
   content: string;
   excerpt: string | null;
   image_url: string | null;
-  club_id: string | null;
   published_at: string;
   is_published: boolean;
   created_at: string;
@@ -519,7 +518,6 @@ export interface CreateNewsPayload {
   content: string;
   excerpt?: string;
   image_url?: string;
-  club_id?: string | null;
   published_at?: string;
   is_published?: boolean;
 }
