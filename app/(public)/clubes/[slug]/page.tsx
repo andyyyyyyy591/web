@@ -22,7 +22,7 @@ export default async function ClubPage({ params }: Props) {
     getMatchesByClub(club.id),
     getClubTrophies(club.id),
     getClubTransfers(club.id),
-    getNewsByClub(club.name),
+    getNewsByClub(club.id),
     getPlayersByClubWithDivision(club.id),
     getDivisions(),
   ]);

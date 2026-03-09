@@ -6,6 +6,7 @@ import { createNews } from '@/lib/actions/news';
 import { Button } from '@/components/ui/Button';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { BackButton } from '@/components/ui/BackButton';
+import type { Club } from '@/types';
 
 function toSlug(str: string) {
   return str
@@ -16,7 +17,7 @@ function toSlug(str: string) {
     .slice(0, 100);
 }
 
-export function NuevaNoticiaForm() {
+export function NuevaNoticiaForm({ clubs }: { clubs: Club[] }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +27,7 @@ export function NuevaNoticiaForm() {
   const [content, setContent] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [clubId, setClubId] = useState('');
   const [publishedAt, setPublishedAt] = useState(new Date().toISOString().slice(0, 16));
   const [isPublished, setIsPublished] = useState(false);
 
@@ -44,6 +46,7 @@ export function NuevaNoticiaForm() {
       content,
       excerpt: excerpt || undefined,
       image_url: imageUrl || undefined,
+      club_id: clubId || null,
       published_at: publishedAt ? new Date(publishedAt).toISOString() : undefined,
       is_published: isPublished,
     });
@@ -51,6 +54,8 @@ export function NuevaNoticiaForm() {
     if (result.error) setError(result.error);
     else router.push('/admin/noticias');
   }
+
+  const inputCls = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500';
 
   return (
     <div className="max-w-2xl space-y-4">
@@ -71,36 +76,43 @@ export function NuevaNoticiaForm() {
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Título *</label>
-          <input required value={title} onChange={(e) => handleTitleChange(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500" />
+          <input required value={title} onChange={(e) => handleTitleChange(e.target.value)} className={inputCls} />
         </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Slug *</label>
           <input required value={slug} onChange={(e) => setSlug(e.target.value)}
             placeholder="mi-noticia-titulo"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500" />
+            className={`${inputCls} font-mono`} />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Club relacionado</label>
+          <select value={clubId} onChange={(e) => setClubId(e.target.value)} className={inputCls}>
+            <option value="">— General (sin club específico) —</option>
+            {clubs.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
         </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Resumen (opcional)</label>
           <input value={excerpt} onChange={(e) => setExcerpt(e.target.value)}
             placeholder="Breve descripción para la lista de noticias"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500" />
+            className={inputCls} />
         </div>
 
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Contenido *</label>
           <textarea required value={content} onChange={(e) => setContent(e.target.value)}
-            rows={10}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500" />
+            rows={10} className={inputCls} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Fecha de publicación</label>
-            <input type="datetime-local" value={publishedAt} onChange={(e) => setPublishedAt(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500" />
+            <input type="datetime-local" value={publishedAt} onChange={(e) => setPublishedAt(e.target.value)} className={inputCls} />
           </div>
           <div className="flex items-end pb-2">
             <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">

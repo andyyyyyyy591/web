@@ -8,12 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { BackButton } from '@/components/ui/BackButton';
 import type { TournamentWithRelations, Club, TournamentFormat } from '@/types';
 
-const RONDAS = [
-  'Cuartos de final',
-  'Semifinal',
-  'Final',
-  'Otro…',
-];
+const RONDAS = ['Cuartos de final', 'Semifinal', 'Final', 'Otro…'];
 
 type MatchZone = 'zona_a' | 'zona_b' | 'interzonal';
 
@@ -45,20 +40,17 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
   const [scheduledAt, setScheduledAt] = useState('');
   const [stadium, setStadium] = useState('');
 
-  // Árbitros
   const [referee, setReferee] = useState('');
   const [refereeAssistant1, setRefereeAssistant1] = useState('');
   const [refereeAssistant2, setRefereeAssistant2] = useState('');
   const [refereeFourth, setRefereeFourth] = useState('');
 
-  // Ronda (para zonas y eliminatorias)
+  // round_label: used as jornada for tct/zonas, instancia for eliminatorias
   const [rondaSelect, setRondaSelect] = useState('');
   const [rondaCustom, setRondaCustom] = useState('');
+  const [jornada, setJornada] = useState('');
 
-  // Zona del partido (solo para formato 'zonas')
   const [matchZone, setMatchZone] = useState<MatchZone | null>(null);
-
-  // Clubes del torneo
   const [tournamentClubs, setTournamentClubs] = useState<{ club_id: string; club_name: string; zone: string | null }[]>([]);
 
   const bySeasonId = tournaments.reduce<Record<string, TournamentWithRelations[]>>((acc, t) => {
@@ -69,11 +61,17 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
   }, {});
 
   const selectedTournament = tournaments.find((t) => t.id === tournamentId);
-  const format: TournamentFormat = (selectedTournament as any)?.format ?? 'todos_contra_todos';
+
+  // Derive format from division slug first (business rule), then fall back to stored format
+  const divSlug = selectedTournament?.division?.slug ?? '';
+  const format: TournamentFormat =
+    (divSlug === 'primera' || divSlug === 'reserva')
+      ? 'zonas'
+      : (selectedTournament?.format ?? 'todos_contra_todos');
+
   const badge = FORMAT_BADGE[format];
 
   function autoDetectZone(homeId: string, awayId: string, tc = tournamentClubs): MatchZone | null {
-    if (format !== 'zonas') return null;
     const homeZone = tc.find((t) => t.club_id === homeId)?.zone;
     const awayZone = tc.find((t) => t.club_id === awayId)?.zone;
     if (!homeZone && !awayZone) return null;
@@ -87,6 +85,7 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
     setHomeClubId('');
     setAwayClubId('');
     setRondaSelect('');
+    setJornada('');
     setMatchZone(null);
     if (id) {
       const tc = await getTournamentClubsForFixture(id);
@@ -106,18 +105,18 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
     if (format === 'zonas' && homeClubId && id) setMatchZone(autoDetectZone(homeClubId, id));
   }
 
-  // Todos los clubes del torneo sin filtrar por zona
   const availableClubs = tournamentClubs.length > 0
     ? clubs.filter((c) => tournamentClubs.some((t) => t.club_id === c.id))
     : clubs;
 
-  // Para mostrar la zona de cada equipo junto a su nombre
   function clubLabel(clubId: string) {
     const tc = tournamentClubs.find((t) => t.club_id === clubId);
     return tc?.zone ? ` (Zona ${tc.zone})` : '';
   }
 
-  const roundLabel = rondaSelect === 'Otro…' ? rondaCustom : rondaSelect;
+  const roundLabel = format === 'eliminatorias'
+    ? (rondaSelect === 'Otro…' ? rondaCustom : rondaSelect)
+    : jornada;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -148,7 +147,7 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
     <div className="max-w-lg space-y-4">
       <div className="flex items-center gap-3">
         <BackButton href="/admin/partidos" />
-        <h1 className="text-2xl font-bold text-slate-900">Nuevo cruce</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Nuevo partido</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 space-y-5">
@@ -174,8 +173,33 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
           )}
         </div>
 
-        {/* Instancia del cruce — siempre visible una vez seleccionado torneo */}
-        {tournamentId && (
+        {/* Zona (solo para formato 'zonas') */}
+        {format === 'zonas' && tournamentId && (
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Zona del partido</label>
+            <div className="flex gap-2">
+              {ZONE_OPTIONS.map((z) => (
+                <button
+                  key={z.value}
+                  type="button"
+                  onClick={() => setMatchZone(z.value)}
+                  className={`flex-1 rounded-xl border-2 py-2.5 text-xs font-bold transition-colors ${
+                    matchZone === z.value
+                      ? z.value === 'interzonal'
+                        ? 'border-orange-500 bg-orange-50 text-orange-700'
+                        : 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                  }`}
+                >
+                  {z.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Instancia (solo eliminatorias) */}
+        {format === 'eliminatorias' && tournamentId && (
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Instancia</label>
             <div className="grid grid-cols-2 gap-2 mb-2">
@@ -211,32 +235,19 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
           </div>
         )}
 
-        {/* Zona (solo para torneos con formato 'zonas') */}
-        {format === 'zonas' && tournamentId && (
+        {/* Jornada (todos_contra_todos y zonas) */}
+        {(format === 'todos_contra_todos' || format === 'zonas') && tournamentId && (
           <div>
-            <label className="mb-2 block text-sm font-medium text-slate-700">Zona del partido</label>
-            <div className="flex gap-2">
-              {ZONE_OPTIONS.map((z) => (
-                <button
-                  key={z.value}
-                  type="button"
-                  onClick={() => setMatchZone(z.value)}
-                  className={`flex-1 rounded-xl border-2 py-2.5 text-xs font-bold transition-colors ${
-                    matchZone === z.value
-                      ? z.value === 'interzonal'
-                        ? 'border-orange-500 bg-orange-50 text-orange-700'
-                        : 'border-purple-500 bg-purple-50 text-purple-700'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                  }`}
-                >
-                  {z.label}
-                </button>
-              ))}
-            </div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Jornada (opcional)</label>
+            <input
+              type="text" value={jornada} onChange={(e) => setJornada(e.target.value)}
+              placeholder="Ej: Fecha 1, Fecha 2…"
+              className={inputCls}
+            />
           </div>
         )}
 
-        {/* Equipos — todos los del torneo, sin filtrar por zona */}
+        {/* Equipos */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Local *</label>
@@ -294,7 +305,7 @@ export function NuevoPartidoForm({ tournaments, clubs }: Props) {
         </div>
 
         <div className="flex gap-3 pt-2 border-t border-slate-100">
-          <Button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Crear cruce'}</Button>
+          <Button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Crear partido'}</Button>
           <Button type="button" variant="secondary" onClick={() => router.push('/admin/partidos')}>Cancelar</Button>
         </div>
       </form>

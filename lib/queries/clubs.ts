@@ -56,12 +56,12 @@ export async function getClubTransfers(clubId: string): Promise<TransferWithPlay
   return data as TransferWithPlayer[];
 }
 
-export async function getNewsByClub(clubName: string, limit = 10): Promise<News[]> {
+export async function getNewsByClub(clubId: string, limit = 10): Promise<News[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('news')
     .select('*')
-    .ilike('title', `%${clubName}%`)
+    .eq('club_id', clubId)
     .eq('is_published', true)
     .order('published_at', { ascending: false })
     .limit(limit);
