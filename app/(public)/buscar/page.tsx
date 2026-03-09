@@ -4,11 +4,28 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
+interface PageResult {
+  label: string;
+  url: string;
+  icon: string;
+  description: string;
+}
+
 interface SearchResults {
+  pages: PageResult[];
   clubs: Array<{ id: string; name: string; slug: string; logo_url: string | null; primary_color: string }>;
   players: Array<{ id: string; first_name: string; last_name: string; photo_url: string | null; club_name: string }>;
   news: Array<{ id: string; title: string; slug: string; image_url: string | null; excerpt: string | null }>;
 }
+
+const QUICK_LINKS: PageResult[] = [
+  { label: 'Tabla · Primera División',  url: '/primera',             icon: '📊', description: 'Tabla de posiciones' },
+  { label: 'Tabla · Cuarta División',   url: '/cuarta',              icon: '📊', description: 'Tabla de posiciones' },
+  { label: 'Tabla · Quinta División',   url: '/quinta',              icon: '📊', description: 'Tabla de posiciones' },
+  { label: 'Tabla · Séptima División',  url: '/septima',             icon: '📊', description: 'Tabla de posiciones' },
+  { label: 'Goleadores · Primera',      url: '/primera/goleadores',  icon: '🥅', description: 'Tabla de goleadores' },
+  { label: 'Goleadores · Cuarta',       url: '/cuarta/goleadores',   icon: '🥅', description: 'Tabla de goleadores' },
+];
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -44,7 +61,7 @@ export default function BuscarPage() {
   }, [debouncedQuery]);
 
   const total = results
-    ? results.clubs.length + results.players.length + results.news.length
+    ? results.pages.length + results.clubs.length + results.players.length + results.news.length
     : 0;
 
   return (
@@ -62,16 +79,32 @@ export default function BuscarPage() {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar equipos, jugadores, noticias…"
+          placeholder="Buscar tabla, goleadores, equipos, jugadores…"
           className="w-full rounded-xl bg-elevated py-3 pl-9 pr-10 text-sm text-primary placeholder:text-secondary focus:outline-none focus:ring-1 focus:ring-accent"
         />
       </div>
 
-      {/* Empty state */}
+      {/* Empty state: quick links */}
       {!query && (
-        <div className="py-16 text-center">
-          <p className="text-4xl">🔍</p>
-          <p className="mt-3 text-sm text-secondary">Buscá equipos, jugadores o noticias</p>
+        <div className="space-y-4">
+          <div>
+            <h2 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-secondary">Accesos rápidos</h2>
+            <div className="space-y-1">
+              {QUICK_LINKS.map((link) => (
+                <Link key={link.url} href={link.url}
+                  className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors">
+                  <span className="text-xl w-8 text-center shrink-0">{link.icon}</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-primary">{link.label}</p>
+                    <p className="text-xs text-secondary">{link.description}</p>
+                  </div>
+                  <svg className="ml-auto h-4 w-4 text-secondary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                  </svg>
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -79,12 +112,37 @@ export default function BuscarPage() {
       {results && total === 0 && (
         <div className="py-12 text-center">
           <p className="text-sm text-secondary">Sin resultados para "{query}"</p>
+          <p className="mt-1 text-xs text-secondary opacity-60">Probá buscar "tabla primera", "goleadores cuarta", un equipo o un jugador</p>
         </div>
       )}
 
       {/* Results */}
       {results && total > 0 && (
         <div className="space-y-6">
+
+          {/* Pages */}
+          {results.pages.length > 0 && (
+            <section>
+              <h2 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-secondary">Páginas</h2>
+              <div className="space-y-1">
+                {results.pages.map((page) => (
+                  <Link key={page.url} href={page.url}
+                    className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors">
+                    <span className="text-xl w-8 text-center shrink-0">{page.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-primary">{page.label}</p>
+                      <p className="text-xs text-secondary">{page.description}</p>
+                    </div>
+                    <svg className="ml-auto h-4 w-4 text-secondary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                    </svg>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Clubs */}
           {results.clubs.length > 0 && (
             <section>
               <h2 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-secondary">Equipos</h2>
@@ -94,20 +152,24 @@ export default function BuscarPage() {
                     className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors">
                     {club.logo_url ? (
                       <Image src={club.logo_url} alt={club.name} width={36} height={36}
-                        className="h-9 w-9 rounded-full object-contain" />
+                        className="h-9 w-9 rounded-full object-contain shrink-0" />
                     ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full font-bold text-sm text-white"
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full font-bold text-sm text-white shrink-0"
                         style={{ backgroundColor: club.primary_color || '#444' }}>
                         {club.name.slice(0, 2).toUpperCase()}
                       </div>
                     )}
                     <span className="text-sm font-semibold text-primary">{club.name}</span>
+                    <svg className="ml-auto h-4 w-4 text-secondary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                    </svg>
                   </Link>
                 ))}
               </div>
             </section>
           )}
 
+          {/* Players */}
           {results.players.length > 0 && (
             <section>
               <h2 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-secondary">Jugadores</h2>
@@ -117,22 +179,26 @@ export default function BuscarPage() {
                     className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors">
                     {player.photo_url ? (
                       <Image src={player.photo_url} alt={player.first_name} width={36} height={36}
-                        className="h-9 w-9 rounded-full object-cover" />
+                        className="h-9 w-9 rounded-full object-cover shrink-0" />
                     ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-elevated text-xs font-bold text-secondary">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-elevated text-xs font-bold text-secondary shrink-0">
                         {player.first_name[0]}{player.last_name[0]}
                       </div>
                     )}
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-semibold text-primary">{player.first_name} {player.last_name}</p>
                       <p className="text-xs text-secondary">{player.club_name}</p>
                     </div>
+                    <svg className="ml-auto h-4 w-4 text-secondary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                    </svg>
                   </Link>
                 ))}
               </div>
             </section>
           )}
 
+          {/* News */}
           {results.news.length > 0 && (
             <section>
               <h2 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-secondary">Noticias</h2>
@@ -144,9 +210,12 @@ export default function BuscarPage() {
                       <Image src={item.image_url} alt={item.title} width={40} height={40}
                         className="h-10 w-10 rounded-lg object-cover flex-shrink-0" />
                     )}
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-primary line-clamp-2 leading-tight">{item.title}</p>
                     </div>
+                    <svg className="ml-auto h-4 w-4 text-secondary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                    </svg>
                   </Link>
                 ))}
               </div>
