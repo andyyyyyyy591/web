@@ -41,6 +41,7 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [playerSearch, setPlayerSearch] = useState('');
 
   function toggle(playerId: string) {
     setEntries((prev) => ({
@@ -76,6 +77,15 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup 
   const starters = players.filter((p) => entries[p.id]?.selected && entries[p.id]?.is_starter);
   const subs = players.filter((p) => entries[p.id]?.selected && !entries[p.id]?.is_starter);
   const unselected = players.filter((p) => !entries[p.id]?.selected);
+
+  const searchNorm = playerSearch.toLowerCase().trim();
+  const filteredUnselected = searchNorm
+    ? unselected.filter((p) => {
+        const full = `${p.first_name} ${p.last_name} ${p.last_name} ${p.first_name}`.toLowerCase();
+        const num = p.jersey_number?.toString() ?? '';
+        return full.includes(searchNorm) || num.startsWith(searchNorm);
+      })
+    : unselected;
 
   return (
     <div className="space-y-4">
@@ -116,19 +126,50 @@ export function LineupForm({ matchId, clubId, clubName, players, existingLineup 
       {/* Sin seleccionar */}
       {unselected.length > 0 && (
         <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">Jugadores disponibles</p>
-          <div className="space-y-1">
-            {unselected.map((p) => (
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+            Jugadores disponibles ({unselected.length})
+          </p>
+
+          {/* Buscador */}
+          <div className="relative mb-2">
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              type="text"
+              value={playerSearch}
+              onChange={(e) => setPlayerSearch(e.target.value)}
+              placeholder="Buscar jugador por nombre o número…"
+              className="w-full rounded-lg border border-slate-300 py-2 pl-8 pr-3 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+            />
+            {playerSearch && (
               <button
-                key={p.id}
-                onClick={() => toggle(p.id)}
-                className="flex w-full items-center gap-3 rounded-lg border border-dashed border-slate-200 px-3 py-2 text-left text-sm text-slate-500 hover:border-green-400 hover:text-slate-800 transition-colors"
+                onClick={() => setPlayerSearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
-                <span className="w-6 text-right text-xs text-slate-400">{p.jersey_number ?? '—'}</span>
-                <span className="flex-1">{p.last_name} {p.first_name}</span>
-                <span className="text-xs text-green-600 font-semibold">+ Agregar</span>
+                ✕
               </button>
-            ))}
+            )}
+          </div>
+
+          <div className="space-y-1">
+            {filteredUnselected.length === 0 ? (
+              <p className="py-3 text-center text-xs text-slate-400">
+                Sin resultados para "{playerSearch}"
+              </p>
+            ) : (
+              filteredUnselected.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => toggle(p.id)}
+                  className="flex w-full items-center gap-3 rounded-lg border border-dashed border-slate-200 px-3 py-2 text-left text-sm text-slate-500 hover:border-green-400 hover:text-slate-800 transition-colors"
+                >
+                  <span className="w-6 text-right text-xs text-slate-400">{p.jersey_number ?? '—'}</span>
+                  <span className="flex-1">{p.last_name} {p.first_name}</span>
+                  <span className="text-xs text-green-600 font-semibold">+ Agregar</span>
+                </button>
+              ))
+            )}
           </div>
         </div>
       )}
