@@ -52,28 +52,32 @@ export function DateBar({ selected, onChange }: Props) {
 
       <div className="w-px h-5 bg-border flex-shrink-0" />
 
-      <div
-        ref={scrollRef}
-        className="flex gap-1 overflow-x-auto px-2 py-2 flex-1"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {dates.map((item) => {
-          const isSelected = item.date === selected;
-          return (
-            <button
-              key={item.date}
-              ref={item.label === 'Hoy' ? todayRef : undefined}
-              onClick={() => onChange(item.date)}
-              className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                isSelected
-                  ? 'bg-accent text-white'
-                  : 'text-secondary hover:text-primary hover:bg-elevated'
-              }`}
-            >
-              {item.label}
-            </button>
-          );
-        })}
+      <div className="relative flex-1 overflow-hidden">
+        <div
+          ref={scrollRef}
+          className="flex gap-1 overflow-x-auto px-2 py-2"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {dates.map((item) => {
+            const isSelected = item.date === selected;
+            return (
+              <button
+                key={item.date}
+                ref={item.label === 'Hoy' ? todayRef : undefined}
+                onClick={() => onChange(item.date)}
+                className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                  isSelected
+                    ? 'bg-accent text-white'
+                    : 'text-secondary hover:text-primary hover:bg-elevated'
+                }`}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-card to-transparent" />
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent" />
       </div>
     </div>
   );

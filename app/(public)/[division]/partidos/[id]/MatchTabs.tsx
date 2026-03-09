@@ -43,9 +43,11 @@ function ClubLogo({ url, name, size = 56 }: { url: string | null; name: string; 
 
 interface Props {
   match: MatchDetail;
+  homePosition?: number;
+  awayPosition?: number;
 }
 
-export function MatchTabs({ match }: Props) {
+export function MatchTabs({ match, homePosition, awayPosition }: Props) {
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Previa');
   const live = isLive(match.status);
   const finished = match.status === 'finished';
@@ -125,6 +127,22 @@ export function MatchTabs({ match }: Props) {
       <div className="px-4 py-4">
         {activeTab === 'Previa' && (
           <div className="space-y-3">
+            {(homePosition || awayPosition) && (
+              <div className="rounded-xl bg-elevated px-4 py-3">
+                <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest text-secondary">Posición en la tabla</p>
+                <div className="flex items-center justify-around">
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-accent">{homePosition ? `${homePosition}°` : '—'}</p>
+                    <p className="mt-1 text-xs text-secondary">{match.home_club.name}</p>
+                  </div>
+                  <div className="h-8 w-px bg-border" />
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-accent">{awayPosition ? `${awayPosition}°` : '—'}</p>
+                    <p className="mt-1 text-xs text-secondary">{match.away_club.name}</p>
+                  </div>
+                </div>
+              </div>
+            )}
             {match.scheduled_at && (
               <InfoRow label="Fecha y hora" value={formatDateTime(match.scheduled_at)} />
             )}

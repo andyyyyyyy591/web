@@ -7,9 +7,11 @@ import type { MatchDetail } from '@/types';
 
 interface RealtimeMatchWrapperProps {
   initialMatch: MatchDetail;
+  homePosition?: number;
+  awayPosition?: number;
 }
 
-export function RealtimeMatchWrapper({ initialMatch }: RealtimeMatchWrapperProps) {
+export function RealtimeMatchWrapper({ initialMatch, homePosition, awayPosition }: RealtimeMatchWrapperProps) {
   const match = useRealtimeMatch(initialMatch);
   const events = useRealtimeEvents(initialMatch.id, initialMatch.events);
 
@@ -19,5 +21,5 @@ export function RealtimeMatchWrapper({ initialMatch }: RealtimeMatchWrapperProps
     events,
   };
 
-  return <MatchTabs match={enrichedMatch} />;
+  return <MatchTabs match={enrichedMatch} homePosition={homePosition} awayPosition={awayPosition} />;
 }

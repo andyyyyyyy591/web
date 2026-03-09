@@ -21,7 +21,7 @@ export default async function NoticiaPage({ params }: Props) {
   return (
     <article className="mx-auto max-w-3xl px-4 py-10">
       <div className="mb-6">
-        <Link href="/noticias" className="text-sm text-green-600 hover:underline">
+        <Link href="/noticias" className="text-sm text-accent hover:opacity-75 transition-opacity">
           ← Volver a noticias
         </Link>
       </div>
@@ -32,16 +32,16 @@ export default async function NoticiaPage({ params }: Props) {
         </div>
       )}
 
-      <p className="mb-3 text-sm text-slate-400 capitalize">{formatDate(news.published_at)}</p>
-      <h1 className="mb-4 text-3xl font-bold leading-tight text-slate-900 sm:text-4xl">{news.title}</h1>
+      <p className="mb-3 text-sm text-secondary capitalize">{formatDate(news.published_at)}</p>
+      <h1 className="mb-4 text-3xl font-bold leading-tight text-primary sm:text-4xl">{news.title}</h1>
 
       {news.excerpt && (
-        <p className="mb-6 text-lg text-slate-600 leading-relaxed">{news.excerpt}</p>
+        <p className="mb-6 text-base text-secondary leading-relaxed">{news.excerpt}</p>
       )}
 
-      <div className="prose prose-slate max-w-none prose-p:leading-relaxed prose-headings:font-bold">
+      <div className="space-y-4">
         {news.content.split('\n').map((line, i) =>
-          line.trim() ? <p key={i} className="mb-4 text-slate-700 leading-relaxed">{line}</p> : <br key={i} />
+          line.trim() ? <p key={i} className="text-sm text-primary/80 leading-relaxed">{line}</p> : <br key={i} />
         )}
       </div>
     </article>

@@ -63,7 +63,12 @@ function StandingsTable({ rows, title }: { rows: StandingWithClub[]; title?: str
                 <td className="py-2.5">
                   <Link href={`/clubes/${s.club.slug}`} className="flex items-center gap-2">
                     <ClubLogo url={s.club.logo_url} name={s.club.name} />
-                    <span className="text-sm font-semibold text-primary">{s.club.short_name || s.club.name}</span>
+                    <span
+                      className="text-sm font-semibold text-primary"
+                      title={s.club.short_name ? s.club.name : undefined}
+                    >
+                      {s.club.short_name || s.club.name}
+                    </span>
                   </Link>
                 </td>
                 <td className="py-2.5 text-center text-xs text-secondary">{s.played}</td>

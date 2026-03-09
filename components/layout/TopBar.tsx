@@ -3,7 +3,7 @@ import Link from 'next/link';
 export function TopBar() {
   return (
     <header className="sticky top-0 z-40 flex h-11 items-center justify-between bg-card border-b border-border px-4">
-      <Link href="/" className="flex items-center gap-2">
+      <Link href="/" className="flex items-center gap-2 hover:opacity-75 transition-opacity">
         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-app text-xs font-black">
           LF
         </div>
