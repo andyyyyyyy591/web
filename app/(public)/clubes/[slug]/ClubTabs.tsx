@@ -10,6 +10,51 @@ import { MatchRow } from '@/components/partidos/MatchRow';
 
 const TABS = ['Resumen', 'Plantel', 'Partidos', 'Tabla', 'Fichajes', 'Noticias', 'Trofeos'] as const;
 
+function StandingsGroup({ rows, clubId }: { rows: StandingWithClub[]; clubId: string }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-secondary text-[10px] uppercase tracking-widest">
+            <th className="pb-2 text-left w-6">#</th>
+            <th className="pb-2 text-left">Club</th>
+            <th className="pb-2 text-center w-8">PJ</th>
+            <th className="pb-2 text-center w-8">G</th>
+            <th className="pb-2 text-center w-8">E</th>
+            <th className="pb-2 text-center w-8">P</th>
+            <th className="pb-2 text-center w-10 text-accent">Pts</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {rows.map((s, i) => (
+            <tr key={s.id} className={`transition-colors ${s.club_id === clubId ? 'bg-accent/10' : 'hover:bg-elevated/50'}`}>
+              <td className="py-2.5 text-xs text-secondary pr-2">{i + 1}</td>
+              <td className="py-2.5">
+                <div className="flex items-center gap-2">
+                  {s.club.logo_url ? (
+                    <Image src={s.club.logo_url} alt={s.club.name} width={18} height={18}
+                      className="rounded-full object-contain" />
+                  ) : (
+                    <div className="h-[18px] w-[18px] rounded-full bg-elevated" />
+                  )}
+                  <span className={`text-sm font-semibold ${s.club_id === clubId ? 'text-accent' : 'text-primary'}`}>
+                    {s.club.short_name || s.club.name}
+                  </span>
+                </div>
+              </td>
+              <td className="py-2.5 text-center text-xs text-secondary">{s.played}</td>
+              <td className="py-2.5 text-center text-xs text-secondary">{s.won}</td>
+              <td className="py-2.5 text-center text-xs text-secondary">{s.drawn}</td>
+              <td className="py-2.5 text-center text-xs text-secondary">{s.lost}</td>
+              <td className="py-2.5 text-center text-sm font-bold text-accent">{s.points}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function formatDate(dt: string) {
   return new Date(dt).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
@@ -43,6 +88,15 @@ export function ClubTabs({ clubId, matches, standings, transfers, trophies, news
   const upcoming = matches.filter((m) => m.status === 'scheduled').slice(0, 3);
   const recent = matches.filter((m) => m.status === 'finished').slice(0, 5);
   const clubStanding = standings.find((s) => s.club_id === clubId);
+  const clubZone = clubStanding?.zone ?? null;
+  // Para torneos de zonas, calcular posición solo dentro de la zona del club
+  const zoneStandings = clubZone ? standings.filter((s) => s.zone === clubZone) : standings;
+  const clubPosition = zoneStandings.findIndex((s) => s.club_id === clubId) + 1;
+
+  // Para el tab Tabla: separar por zonas si corresponde
+  const hasZones = standings.some((s) => s.zone);
+  const standingsZoneA = standings.filter((s) => s.zone === 'A');
+  const standingsZoneB = standings.filter((s) => s.zone === 'B');
 
   const incoming = transfers.filter((t) => t.type === 'in');
   const outgoing = transfers.filter((t) => t.type === 'out');
@@ -74,9 +128,11 @@ export function ClubTabs({ clubId, matches, standings, transfers, trophies, news
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-4xl font-black text-accent">
-                      {standings.findIndex((s) => s.club_id === clubId) + 1}°
+                      {clubPosition}°
                     </span>
-                    <span className="ml-2 text-sm text-secondary">posición</span>
+                    <span className="ml-2 text-sm text-secondary">
+                      {clubZone ? `Zona ${clubZone}` : 'posición'}
+                    </span>
                   </div>
                   <div className="text-right space-y-0.5">
                     <p className="text-xs text-secondary">{clubStanding.played} PJ · {clubStanding.points} Pts</p>
@@ -212,47 +268,22 @@ export function ClubTabs({ clubId, matches, standings, transfers, trophies, news
         {activeTab === 'Tabla' && (
           standings.length === 0 ? (
             <p className="py-8 text-center text-sm text-secondary">Sin datos de tabla</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-secondary text-[10px] uppercase tracking-widest">
-                    <th className="pb-2 text-left w-6">#</th>
-                    <th className="pb-2 text-left">Club</th>
-                    <th className="pb-2 text-center w-8">PJ</th>
-                    <th className="pb-2 text-center w-8">G</th>
-                    <th className="pb-2 text-center w-8">E</th>
-                    <th className="pb-2 text-center w-8">P</th>
-                    <th className="pb-2 text-center w-10 text-accent">Pts</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {standings.map((s, i) => (
-                    <tr key={s.id} className={`transition-colors ${s.club_id === clubId ? 'bg-accent/10' : 'hover:bg-elevated/50'}`}>
-                      <td className="py-2.5 text-xs text-secondary pr-2">{i + 1}</td>
-                      <td className="py-2.5">
-                        <div className="flex items-center gap-2">
-                          {s.club.logo_url ? (
-                            <Image src={s.club.logo_url} alt={s.club.name} width={18} height={18}
-                              className="rounded-full object-contain" />
-                          ) : (
-                            <div className="h-4.5 w-4.5 rounded-full bg-elevated" />
-                          )}
-                          <span className={`text-sm font-semibold ${s.club_id === clubId ? 'text-accent' : 'text-primary'}`}>
-                            {s.club.short_name || s.club.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-2.5 text-center text-xs text-secondary">{s.played}</td>
-                      <td className="py-2.5 text-center text-xs text-secondary">{s.won}</td>
-                      <td className="py-2.5 text-center text-xs text-secondary">{s.drawn}</td>
-                      <td className="py-2.5 text-center text-xs text-secondary">{s.lost}</td>
-                      <td className="py-2.5 text-center text-sm font-bold text-accent">{s.points}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          ) : hasZones ? (
+            <div className="space-y-6">
+              {[{ label: 'Zona A', rows: standingsZoneA }, { label: 'Zona B', rows: standingsZoneB }].map(({ label, rows }) =>
+                rows.length === 0 ? null : (
+                  <div key={label}>
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-xs font-bold uppercase tracking-widest text-accent">{label}</span>
+                      <div className="h-px flex-1 bg-border" />
+                    </div>
+                    <StandingsGroup rows={rows} clubId={clubId} />
+                  </div>
+                )
+              )}
             </div>
+          ) : (
+            <StandingsGroup rows={standings} clubId={clubId} />
           )
         )}
 
