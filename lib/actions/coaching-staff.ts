@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function createCoachingStaff(data: {
   club_id: string;
+  division_id?: string;
   first_name: string;
   last_name: string;
   role: string;
@@ -18,6 +19,7 @@ export async function createCoachingStaff(data: {
 }
 
 export async function updateCoachingStaff(id: string, data: {
+  division_id?: string | null;
   first_name?: string;
   last_name?: string;
   role?: string;

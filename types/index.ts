@@ -94,6 +94,7 @@ export interface Division {
 export interface CoachingStaff {
   id: string;
   club_id: string;
+  division_id: string | null;
   first_name: string;
   last_name: string;
   role: string;

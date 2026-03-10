@@ -15,6 +15,7 @@ const ROLES = ['DT', 'Ayudante de campo', 'Preparador físico', 'Entrenador de a
 interface Props {
   staff: (CoachingStaff & { club?: { name: string } })[];
   clubs: { id: string; name: string }[];
+  divisions: { id: string; name: string }[];
   isTeamAdmin: boolean;
   lockedClubId?: string;
 }
@@ -24,11 +25,12 @@ interface FormState {
   last_name: string;
   role: string;
   photo_url: string;
+  division_id: string;
 }
 
-const EMPTY_FORM: FormState = { first_name: '', last_name: '', role: 'DT', photo_url: '' };
+const EMPTY_FORM: FormState = { first_name: '', last_name: '', role: 'DT', photo_url: '', division_id: '' };
 
-export function CoachingStaffClient({ staff, clubs, isTeamAdmin, lockedClubId }: Props) {
+export function CoachingStaffClient({ staff, clubs, divisions, isTeamAdmin, lockedClubId }: Props) {
   const [list, setList] = useState(staff);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -38,6 +40,11 @@ export function CoachingStaffClient({ staff, clubs, isTeamAdmin, lockedClubId }:
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<FormState>(EMPTY_FORM);
 
+  function divisionName(id: string | null) {
+    if (!id) return null;
+    return divisions.find((d) => d.id === id)?.name ?? null;
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!clubFilter) { setError('Seleccioná un club'); return; }
@@ -45,6 +52,7 @@ export function CoachingStaffClient({ staff, clubs, isTeamAdmin, lockedClubId }:
     setError(null);
     const result = await createCoachingStaff({
       club_id: clubFilter,
+      division_id: form.division_id || undefined,
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
       role: form.role,
@@ -56,7 +64,10 @@ export function CoachingStaffClient({ staff, clubs, isTeamAdmin, lockedClubId }:
     const newEntry = {
       id: crypto.randomUUID(),
       club_id: clubFilter,
-      ...form,
+      division_id: form.division_id || null,
+      first_name: form.first_name,
+      last_name: form.last_name,
+      role: form.role,
       photo_url: form.photo_url || null,
       is_active: true,
       created_at: new Date().toISOString(),
@@ -71,6 +82,7 @@ export function CoachingStaffClient({ staff, clubs, isTeamAdmin, lockedClubId }:
     setSaving(true);
     setError(null);
     const result = await updateCoachingStaff(id, {
+      division_id: editForm.division_id || null,
       first_name: editForm.first_name.trim(),
       last_name: editForm.last_name.trim(),
       role: editForm.role,
@@ -170,6 +182,19 @@ export function CoachingStaffClient({ staff, clubs, isTeamAdmin, lockedClubId }:
             </select>
           </div>
 
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-slate-500">División *</label>
+            <select
+              required
+              value={form.division_id}
+              onChange={(e) => setForm((f) => ({ ...f, division_id: e.target.value }))}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none"
+            >
+              <option value="">Seleccionar división...</option>
+              {divisions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+
           <ImageUpload
             bucket="photos"
             currentUrl={form.photo_url || null}
@@ -218,6 +243,14 @@ export function CoachingStaffClient({ staff, clubs, isTeamAdmin, lockedClubId }:
                   >
                     {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                   </select>
+                  <select
+                    value={editForm.division_id}
+                    onChange={(e) => setEditForm((f) => ({ ...f, division_id: e.target.value }))}
+                    className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm focus:outline-none"
+                  >
+                    <option value="">Sin división</option>
+                    {divisions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
                   <ImageUpload
                     bucket="photos"
                     currentUrl={editForm.photo_url || null}
@@ -251,7 +284,7 @@ export function CoachingStaffClient({ staff, clubs, isTeamAdmin, lockedClubId }:
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-slate-800">{s.last_name} {s.first_name}</p>
-                    <p className="text-xs text-slate-400">{s.role}</p>
+                    <p className="text-xs text-slate-400">{s.role}{divisionName(s.division_id) ? ` · ${divisionName(s.division_id)}` : ''}</p>
                     {!isTeamAdmin && s.club && (
                       <p className="text-xs text-slate-300">{s.club.name}</p>
                     )}
@@ -260,7 +293,7 @@ export function CoachingStaffClient({ staff, clubs, isTeamAdmin, lockedClubId }:
                     <button
                       onClick={() => {
                         setEditingId(s.id);
-                        setEditForm({ first_name: s.first_name, last_name: s.last_name, role: s.role, photo_url: s.photo_url ?? '' });
+                        setEditForm({ first_name: s.first_name, last_name: s.last_name, role: s.role, photo_url: s.photo_url ?? '', division_id: s.division_id ?? '' });
                       }}
                       className="rounded px-2 py-1 text-xs text-slate-400 hover:bg-slate-50 hover:text-slate-700"
                     >

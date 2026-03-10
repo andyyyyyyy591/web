@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getAllCoachingStaff, getCoachingStaffByClub } from '@/lib/queries/coaching-staff';
 import { getClubs } from '@/lib/queries/clubs';
+import { getDivisions } from '@/lib/queries/divisions';
 import { getAdminRole, getAdminClubId } from '@/lib/utils/auth';
 import { CoachingStaffClient } from './CoachingStaffClient';
 
@@ -11,9 +12,10 @@ export default async function CuerpoTecnicoPage() {
   const clubId = getAdminClubId(user);
   const isTeamAdmin = role === 'team_admin';
 
-  const [staff, clubs] = await Promise.all([
+  const [staff, clubs, divisions] = await Promise.all([
     isTeamAdmin && clubId ? getCoachingStaffByClub(clubId) : getAllCoachingStaff(),
     isTeamAdmin ? Promise.resolve([]) : getClubs(),
+    getDivisions(),
   ]);
 
   return (
@@ -22,6 +24,7 @@ export default async function CuerpoTecnicoPage() {
       <CoachingStaffClient
         staff={staff as any}
         clubs={clubs.map((c) => ({ id: c.id, name: c.name }))}
+        divisions={divisions.map((d) => ({ id: d.id, name: d.name }))}
         isTeamAdmin={isTeamAdmin}
         lockedClubId={isTeamAdmin ? (clubId ?? undefined) : undefined}
       />
