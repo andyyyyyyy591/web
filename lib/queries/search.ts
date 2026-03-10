@@ -13,19 +13,19 @@ export interface PageResult {
 const SECTIONS = [
   {
     key: 'tabla',
-    keywords: ['tabla', 'posiciones', 'clasificacion', 'clasificacion', 'standing'],
+    keywords: ['tabla', 'posiciones', 'clasificacion', 'standing'],
     label: 'Tabla',
     icon: '📊',
     description: 'Tabla de posiciones',
-    urlSuffix: '',
+    urlSuffix: '/tabla',
   },
   {
-    key: 'partidos',
+    key: 'fixture',
     keywords: ['partidos', 'partido', 'fixture', 'calendario', 'fechas', 'fecha', 'resultados', 'resultado'],
-    label: 'Partidos',
+    label: 'Fixture',
     icon: '⚽',
     description: 'Fixture y resultados',
-    urlSuffix: '/partidos',
+    urlSuffix: '/fixture',
   },
   {
     key: 'goleadores',
@@ -34,22 +34,6 @@ const SECTIONS = [
     icon: '🥅',
     description: 'Tabla de goleadores',
     urlSuffix: '/goleadores',
-  },
-  {
-    key: 'equipos',
-    keywords: ['equipos', 'equipo', 'clubes', 'club', 'teams'],
-    label: 'Equipos',
-    icon: '👥',
-    description: 'Equipos del torneo',
-    urlSuffix: '/equipos',
-  },
-  {
-    key: 'tarjetas',
-    keywords: ['tarjetas', 'tarjeta', 'amarillas', 'amarilla', 'rojas', 'roja', 'disciplina', 'sanciones', 'sancion'],
-    label: 'Tarjetas',
-    icon: '🟨',
-    description: 'Tarjetas y disciplina',
-    urlSuffix: '/tarjetas',
   },
 ];
 
