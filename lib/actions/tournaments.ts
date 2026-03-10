@@ -25,12 +25,14 @@ export async function syncAndRecalculateStandings(tournamentId: string) {
   const supabase = await createClient();
   const admin = createAdminClient();
 
-  // 1. Obtener todos los partidos del torneo con match_zone
-  const { data: matches, error: mErr } = await supabase
-    .from('matches')
-    .select('home_club_id, away_club_id, match_zone')
-    .eq('tournament_id', tournamentId);
+  // 1. Obtener formato del torneo y todos sus partidos
+  const [{ data: tournament }, { data: matches, error: mErr }] = await Promise.all([
+    supabase.from('tournaments').select('format').eq('id', tournamentId).single(),
+    supabase.from('matches').select('home_club_id, away_club_id, match_zone').eq('tournament_id', tournamentId),
+  ]);
   if (mErr) return { error: mErr.message };
+
+  const isZonas = tournament?.format === 'zonas';
 
   // 2. Determinar la zona de cada club según sus partidos de zona
   const clubZones = new Map<string, string>();
@@ -41,12 +43,13 @@ export async function syncAndRecalculateStandings(tournamentId: string) {
     } else if (m.match_zone === 'zona_b') {
       clubZones.set(m.home_club_id, 'B');
       clubZones.set(m.away_club_id, 'B');
-    } else {
-      // todos_contra_todos o sin zona: registrar sin zona si no existe
+    } else if (!isZonas) {
+      // Solo para todos_contra_todos: registrar sin zona
       for (const id of [m.home_club_id, m.away_club_id]) {
         if (!clubZones.has(id)) clubZones.set(id, '');
       }
     }
+    // En torneos de zonas, los interzonales no agregan clubes nuevos sin zona
   }
 
   // 3. Upsert en tournament_clubs
@@ -65,7 +68,17 @@ export async function syncAndRecalculateStandings(tournamentId: string) {
     if (uErr) return { error: uErr.message };
   }
 
-  // 4. Recalcular standings
+  // 4. Para torneos de zonas: eliminar entradas con zone=null (datos corruptos de versiones anteriores)
+  //    Solo afecta clubes que quedaron sin zona asignada (p.ej. de runs anteriores del sync bugueado)
+  if (isZonas) {
+    await admin
+      .from('tournament_clubs')
+      .delete()
+      .eq('tournament_id', tournamentId)
+      .is('zone', null);
+  }
+
+  // 5. Recalcular standings
   const { error: rpcErr } = await admin.rpc('recalculate_tournament_standings', {
     p_tournament_id: tournamentId,
   });
