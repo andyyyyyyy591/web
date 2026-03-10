@@ -13,12 +13,6 @@
   input[type="date"]::-webkit-calendar-picker-indicator {
     display: none;
   }
-  /* Prevent iOS Safari auto-zoom on input focus (triggers when font-size < 16px) */
-  @supports (-webkit-touch-callout: none) {
-    input, select, textarea {
-      font-size: 16px;
-    }
-  }
 }
 
 @layer utilities {
@@ -28,5 +22,13 @@
   /* Safe area padding for iOS bottom navigation */
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Prevent iOS Safari auto-zoom on input focus.
+   Must be outside @layer so it beats Tailwind utility classes (text-sm = 14px triggers zoom). */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: 16px !important;
   }
 }
