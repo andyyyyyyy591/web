@@ -17,8 +17,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Liga de Fútbol',
-  description: 'Resultados, tabla y estadísticas de la liga local',
+  title: 'Conexión Sur',
+  description: 'Resultados, tabla y estadísticas de Conexión Sur',
   icons: {
     icon: '/favicon.png',
     apple: '/apple-touch-icon.png',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Liga de Fútbol',
+    title: 'Conexión Sur',
   },
 };
 

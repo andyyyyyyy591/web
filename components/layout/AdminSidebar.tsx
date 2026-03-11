@@ -138,11 +138,9 @@ export function AdminSidebar({ role, clubId, userEmail }: Props) {
       {/* Logo */}
       <div className="border-b border-slate-200 p-4">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600 text-white font-bold text-sm">
-            LF
-          </div>
+          <img src="/favicon.png" alt="Conexión Sur" className="h-8 w-8 rounded-lg object-contain" />
           <div>
-            <p className="text-sm font-bold text-slate-800">Liga Fútbol</p>
+            <p className="text-sm font-bold text-slate-800">Conexión Sur</p>
             <p className="text-xs text-slate-400">Panel admin</p>
           </div>
         </Link>
