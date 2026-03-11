@@ -23,6 +23,10 @@
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+  /* Main content bottom padding = nav height (3.5rem) + safe area */
+  .pb-nav-safe {
+    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* Prevent iOS Safari auto-zoom on input focus.

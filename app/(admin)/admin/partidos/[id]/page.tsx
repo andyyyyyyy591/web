@@ -23,7 +23,14 @@ export default async function AdminMatchPage({ params }: Props) {
   const hasLive = match.tournament.division.has_live_mode;
 
   const tournamentClubs = await getTournamentClubsForFixture(match.tournament.id);
-  const clubs = tournamentClubs.map((tc) => ({ id: tc.club_id, name: tc.club_name }));
+  const clubsFromTournament = tournamentClubs.map((tc) => ({ id: tc.club_id, name: tc.club_name }));
+  // Always include the current home/away clubs even if not registered in tournament_clubs
+  const knownIds = new Set(clubsFromTournament.map((c) => c.id));
+  const clubs = [...clubsFromTournament];
+  if (!knownIds.has(match.home_club_id as string))
+    clubs.push({ id: match.home_club_id as string, name: match.home_club.name });
+  if (!knownIds.has(match.away_club_id as string))
+    clubs.push({ id: match.away_club_id as string, name: match.away_club.name });
 
   return (
     <div className="max-w-2xl space-y-6">

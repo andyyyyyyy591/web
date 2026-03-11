@@ -1,9 +1,12 @@
+const TZ = 'America/Argentina/Buenos_Aires';
+
 export function formatDate(dateStr: string | null, opts?: Intl.DateTimeFormatOptions): string {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleDateString('es-AR', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
+    timeZone: TZ,
     ...opts,
   });
 }
@@ -15,6 +18,7 @@ export function formatDateTime(dateStr: string | null): string {
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: TZ,
   });
 }
 
@@ -23,6 +27,7 @@ export function formatTime(dateStr: string | null): string {
   return new Date(dateStr).toLocaleTimeString('es-AR', {
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: TZ,
   });
 }
 

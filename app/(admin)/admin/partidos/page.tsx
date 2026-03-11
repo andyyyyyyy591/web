@@ -91,7 +91,7 @@ export default async function AdminPartidosPage() {
                       Editar
                     </Link>
                   )}
-                  {m.tournament.division.has_live_mode && (live || m.status === 'scheduled') && (
+                  {m.tournament.division.has_live_mode && m.status !== 'cancelled' && m.status !== 'postponed' && (
                     <Link
                       href={`/admin/partidos/${m.id}/live`}
                       className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${

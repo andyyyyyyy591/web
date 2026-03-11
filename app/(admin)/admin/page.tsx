@@ -6,8 +6,8 @@ import { getClubs, getClubById } from '@/lib/queries/clubs';
 import { getAllPlayers, getPlayersByClub } from '@/lib/queries/players';
 import { getAllNews } from '@/lib/queries/news';
 import { getAdminRole, getAdminClubId } from '@/lib/utils/auth';
-import { MatchCard } from '@/components/match/MatchCard';
 import { Badge } from '@/components/ui/Badge';
+import { AdminMatchCard } from '@/components/admin/AdminMatchCard';
 
 export default async function AdminDashboard() {
   const supabase = await createClient();
@@ -82,7 +82,7 @@ export default async function AdminDashboard() {
             <p className="text-sm text-slate-400">Sin próximos partidos programados</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {upcoming.map((m) => <MatchCard key={m.id} match={m} />)}
+              {upcoming.map((m) => <AdminMatchCard key={m.id} match={m} />)}
             </div>
           )}
         </section>
@@ -92,7 +92,7 @@ export default async function AdminDashboard() {
           <section>
             <h2 className="mb-3 font-semibold text-slate-800">Últimos resultados</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              {recent.map((m) => <MatchCard key={m.id} match={m} />)}
+              {recent.map((m) => <AdminMatchCard key={m.id} match={m} />)}
             </div>
           </section>
         )}
@@ -196,7 +196,7 @@ export default async function AdminDashboard() {
           <p className="text-sm text-slate-400">Sin próximos partidos</p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {upcoming.map((m) => <MatchCard key={m.id} match={m} />)}
+            {upcoming.map((m) => <AdminMatchCard key={m.id} match={m} />)}
           </div>
         )}
       </section>

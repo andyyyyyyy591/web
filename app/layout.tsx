@@ -13,11 +13,21 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
 };
 
 export const metadata: Metadata = {
   title: 'Liga de Fútbol',
   description: 'Resultados, tabla y estadísticas de la liga local',
+  icons: {
+    icon: '/favicon.png',
+    apple: '/apple-touch-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Liga de Fútbol',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

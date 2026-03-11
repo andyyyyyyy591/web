@@ -25,9 +25,20 @@ interface Props {
   };
 }
 
-function toLocalDatetime(iso: string | null): string {
+/** Converts a UTC ISO string to YYYY-MM-DDTHH:MM in Argentina time (UTC-3, no DST). */
+function toArgDatetime(iso: string | null): string {
   if (!iso) return '';
-  return iso.slice(0, 16);
+  const dt = new Date(iso);
+  // Argentina is UTC-3 with no DST
+  const offset = -3 * 60; // minutes
+  const local = new Date(dt.getTime() + offset * 60 * 1000);
+  return local.toISOString().slice(0, 16);
+}
+
+/** Parses a YYYY-MM-DDTHH:MM string (entered in Argentina time) back to UTC ISO. */
+function argDatetimeToISO(value: string): string {
+  // Append Argentina offset so Date parses correctly
+  return new Date(value + '-03:00').toISOString();
 }
 
 export function MatchEditForm({ matchId, clubs, initialValues }: Props) {
@@ -37,7 +48,7 @@ export function MatchEditForm({ matchId, clubs, initialValues }: Props) {
     away_club_id: initialValues.away_club_id,
     home_score: initialValues.home_score ?? '',
     away_score: initialValues.away_score ?? '',
-    scheduled_at: toLocalDatetime(initialValues.scheduled_at),
+    scheduled_at: toArgDatetime(initialValues.scheduled_at),
     stadium: initialValues.stadium ?? '',
     referee: initialValues.referee ?? '',
     referee_assistant_1: initialValues.referee_assistant_1 ?? '',
@@ -69,7 +80,7 @@ export function MatchEditForm({ matchId, clubs, initialValues }: Props) {
       away_club_id: values.away_club_id || undefined,
       home_score: values.home_score !== '' ? Number(values.home_score) : null,
       away_score: values.away_score !== '' ? Number(values.away_score) : null,
-      scheduled_at: values.scheduled_at ? new Date(values.scheduled_at).toISOString() : undefined,
+      scheduled_at: values.scheduled_at ? argDatetimeToISO(values.scheduled_at) : undefined,
       stadium: values.stadium || undefined,
       referee: values.referee || undefined,
       referee_assistant_1: values.referee_assistant_1 || undefined,
