@@ -23,8 +23,16 @@ export default async function MatchPage({ params }: Props) {
     getActiveInjuriesByClubs([match.home_club_id, match.away_club_id]).catch(() => []),
   ]);
 
-  const homeIdx = standings.findIndex((s) => s.club_id === match.home_club_id);
-  const awayIdx = standings.findIndex((s) => s.club_id === match.away_club_id);
+  const homeStanding = standings.find((s) => s.club_id === match.home_club_id);
+  const awayStanding = standings.find((s) => s.club_id === match.away_club_id);
+  const homeZone = homeStanding?.zone ?? null;
+  const awayZone = awayStanding?.zone ?? null;
+
+  const homeZoneStandings = homeZone ? standings.filter((s) => s.zone === homeZone) : standings;
+  const awayZoneStandings = awayZone ? standings.filter((s) => s.zone === awayZone) : standings;
+
+  const homeIdx = homeZoneStandings.findIndex((s) => s.club_id === match.home_club_id);
+  const awayIdx = awayZoneStandings.findIndex((s) => s.club_id === match.away_club_id);
   const homePosition = homeIdx >= 0 ? homeIdx + 1 : undefined;
   const awayPosition = awayIdx >= 0 ? awayIdx + 1 : undefined;
 
@@ -57,6 +65,8 @@ export default async function MatchPage({ params }: Props) {
         initialMatch={match}
         homePosition={homePosition}
         awayPosition={awayPosition}
+        homeZone={homeZone}
+        awayZone={awayZone}
         homeSuspended={homeSuspended}
         awaySuspended={awaySuspended}
         homeInjured={homeInjured}
@@ -71,6 +81,8 @@ export default async function MatchPage({ params }: Props) {
       match={match}
       homePosition={homePosition}
       awayPosition={awayPosition}
+      homeZone={homeZone}
+      awayZone={awayZone}
       homeSuspended={homeSuspended}
       awaySuspended={awaySuspended}
       homeInjured={homeInjured}

@@ -11,14 +11,17 @@ async function syncNewsClubs(newsId: string, title: string, content: string) {
 
     const { data: clubs } = await supabase
       .from('clubs')
-      .select('id, name')
+      .select('id, name, short_name')
       .eq('is_active', true);
 
     if (!clubs || clubs.length === 0) return;
 
     const text = `${title} ${content}`.toLowerCase();
     const matchedIds = clubs
-      .filter((c) => text.includes(c.name.toLowerCase()))
+      .filter((c) =>
+        text.includes(c.name.toLowerCase()) ||
+        (c.short_name && text.includes(c.short_name.toLowerCase()))
+      )
       .map((c) => c.id);
 
     await supabase.from('news_clubs').delete().eq('news_id', newsId);

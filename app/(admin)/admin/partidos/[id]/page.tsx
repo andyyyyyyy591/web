@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getMatchById } from '@/lib/queries/matches';
 import { getTournamentClubsForFixture } from '@/lib/actions/tournaments';
+import { getAllPlayers } from '@/lib/queries/players';
+import { getClubs } from '@/lib/queries/clubs';
 import { STATUS_LABELS } from '@/types';
 import { formatDateTime } from '@/lib/utils/format';
 import { Badge } from '@/components/ui/Badge';
@@ -9,6 +11,7 @@ import { BackButton } from '@/components/ui/BackButton';
 import { MatchImageUpload } from './MatchImageUpload';
 import { MatchEditForm } from './MatchEditForm';
 import { FinishMatchButton } from './FinishMatchButton';
+import { MatchEventsPanel } from './MatchEventsPanel';
 import { requireSuperAdmin } from '@/lib/utils/admin-guard';
 
 interface Props {
@@ -23,7 +26,11 @@ export default async function AdminMatchPage({ params }: Props) {
 
   const hasLive = match.tournament.division.has_live_mode;
 
-  const tournamentClubs = await getTournamentClubsForFixture(match.tournament.id);
+  const [tournamentClubs, allClubs, allPlayers] = await Promise.all([
+    getTournamentClubsForFixture(match.tournament.id),
+    getClubs(),
+    getAllPlayers(),
+  ]);
   const clubsFromTournament = tournamentClubs.map((tc) => ({ id: tc.club_id, name: tc.club_name }));
   // Always include the current home/away clubs even if not registered in tournament_clubs
   const knownIds = new Set(clubsFromTournament.map((c) => c.id));
@@ -32,6 +39,13 @@ export default async function AdminMatchPage({ params }: Props) {
     clubs.push({ id: match.home_club_id as string, name: match.home_club.name });
   if (!knownIds.has(match.away_club_id as string))
     clubs.push({ id: match.away_club_id as string, name: match.away_club.name });
+
+  const matchClubs = allClubs.filter(
+    (c) => c.id === match.home_club_id || c.id === match.away_club_id,
+  );
+  const matchPlayers = allPlayers.filter(
+    (p) => p.club_id === match.home_club_id || p.club_id === match.away_club_id,
+  );
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -109,6 +123,11 @@ export default async function AdminMatchPage({ params }: Props) {
       />
 
       <MatchImageUpload matchId={id} currentImageUrl={(match as any).image_url ?? null} />
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <h2 className="mb-4 text-sm font-semibold text-slate-700">Goles y tarjetas</h2>
+        <MatchEventsPanel match={match as any} clubs={matchClubs} players={matchPlayers} />
+      </div>
     </div>
   );
 }

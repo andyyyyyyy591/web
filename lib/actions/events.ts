@@ -41,6 +41,7 @@ export async function addMatchEvent(payload: AddMatchEventPayload) {
   }
 
   revalidatePath(`/admin/partidos/${payload.match_id}/live`);
+  revalidatePath(`/admin/partidos/${payload.match_id}`);
   return { data: event };
 }
 
@@ -78,5 +79,6 @@ export async function deleteMatchEvent(eventId: string, matchId: string) {
   }
 
   revalidatePath(`/admin/partidos/${matchId}/live`);
+  revalidatePath(`/admin/partidos/${matchId}`);
   return { success: true };
 }

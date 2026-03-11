@@ -62,6 +62,8 @@ interface Props {
   match: MatchDetail;
   homePosition?: number;
   awayPosition?: number;
+  homeZone?: string | null;
+  awayZone?: string | null;
   homeSuspended?: SuspendedEntry[];
   awaySuspended?: SuspendedEntry[];
   homeInjured?: InjuredEntry[];
@@ -69,7 +71,7 @@ interface Props {
   matchStaff?: MatchStaffEntry[];
 }
 
-export function MatchTabs({ match, homePosition, awayPosition, homeSuspended, awaySuspended, homeInjured, awayInjured, matchStaff }: Props) {
+export function MatchTabs({ match, homePosition, awayPosition, homeZone, awayZone, homeSuspended, awaySuspended, homeInjured, awayInjured, matchStaff }: Props) {
   const homeStaff = matchStaff?.filter((s) => s.club_id === match.home_club_id).map((s) => s.staff);
   const awayStaff = matchStaff?.filter((s) => s.club_id === match.away_club_id).map((s) => s.staff);
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Previa');
@@ -175,11 +177,13 @@ export function MatchTabs({ match, homePosition, awayPosition, homeSuspended, aw
                 <div className="flex items-center justify-around">
                   <div className="text-center">
                     <p className="text-2xl font-black text-accent">{homePosition ? `${homePosition}°` : '—'}</p>
+                    {homeZone && <p className="text-[10px] font-semibold text-accent/70">Zona {homeZone}</p>}
                     <p className="mt-1 text-xs text-secondary">{match.home_club.name}</p>
                   </div>
                   <div className="h-8 w-px bg-border" />
                   <div className="text-center">
                     <p className="text-2xl font-black text-accent">{awayPosition ? `${awayPosition}°` : '—'}</p>
+                    {awayZone && <p className="text-[10px] font-semibold text-accent/70">Zona {awayZone}</p>}
                     <p className="mt-1 text-xs text-secondary">{match.away_club.name}</p>
                   </div>
                 </div>
