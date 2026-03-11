@@ -20,6 +20,8 @@ interface LiveMatchControlProps {
   role: AdminRole | null;
   /** Club del team admin (si aplica) */
   userClubId?: string | null;
+  /** True si el team_admin es el club local — tiene control completo del partido */
+  isHomeAdmin?: boolean;
   suspendedPlayerIds?: string[];
   homeCoachingStaff?: CoachingStaff[];
   awayCoachingStaff?: CoachingStaff[];
@@ -50,7 +52,7 @@ function btnColor(color: string) {
   return map[color] ?? map.green;
 }
 
-export function LiveMatchControl({ initialMatch, clubs, players, role, userClubId, suspendedPlayerIds = [], homeCoachingStaff = [], awayCoachingStaff = [], homeExistingStaffIds = [], awayExistingStaffIds = [] }: LiveMatchControlProps) {
+export function LiveMatchControl({ initialMatch, clubs, players, role, userClubId, isHomeAdmin = false, suspendedPlayerIds = [], homeCoachingStaff = [], awayCoachingStaff = [], homeExistingStaffIds = [], awayExistingStaffIds = [] }: LiveMatchControlProps) {
   const match = useRealtimeMatch(initialMatch);
   const events = useRealtimeEvents(initialMatch.id, initialMatch.events);
   const [transitioning, setTransitioning] = useState<string | null>(null);
@@ -60,6 +62,8 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
   const [addedTime2, setAddedTime2] = useState('');   // tiempo adicional 2T
 
   const isSuperAdmin = role === 'admin';
+  // Home team admin has full control over the match (same as super admin)
+  const canControl = isSuperAdmin || isHomeAdmin;
   const live = isLive(match.status);
 
   async function handleDelete(eventId: string) {
@@ -98,9 +102,10 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
       : []),
   ];
 
-  // Para team admin: solo pueden ver su equipo, pero pueden ver la timeline completa
-  const lockedClubId = !isSuperAdmin && userClubId ? userClubId : undefined;
-  const teamAdminClub = lockedClubId ? clubs.find((c) => c.id === lockedClubId) : null;
+  // Home admin and super admin have full control — no club restriction
+  // (away team admins are blocked at page level and never reach here)
+  const lockedClubId = canControl ? undefined : (userClubId ?? undefined);
+  const teamAdminClub = (!canControl && lockedClubId) ? clubs.find((c) => c.id === lockedClubId) : null;
 
   return (
     <div className="space-y-4">
@@ -310,7 +315,7 @@ export function LiveMatchControl({ initialMatch, clubs, players, role, userClubI
                         : event.type}
                       {event.description && <span className="ml-1 text-xs text-slate-400">({event.description})</span>}
                     </span>
-                    {isSuperAdmin && (
+                    {canControl && (
                       <button
                         onClick={() => handleDelete(event.id)}
                         className="rounded-lg px-2 py-1 text-xs text-red-400 hover:bg-red-50 hover:text-red-600"

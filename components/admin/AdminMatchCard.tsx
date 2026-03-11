@@ -7,12 +7,16 @@ import { Badge } from '@/components/ui/Badge';
 
 interface Props {
   match: MatchWithClubs;
+  /** Club ID of the current user (team admin), to hide live link for away matches */
+  userClubId?: string | null;
 }
 
-export function AdminMatchCard({ match }: Props) {
+export function AdminMatchCard({ match, userClubId }: Props) {
   const live = isLive(match.status);
   const finished = match.status === 'finished';
   const hasLive = match.tournament.division.has_live_mode;
+  // Team admins only see the live link when they're the home club
+  const canAccessLive = !userClubId || match.home_club_id === userClubId;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -78,7 +82,7 @@ export function AdminMatchCard({ match }: Props) {
         >
           Editar
         </Link>
-        {hasLive && match.status !== 'cancelled' && match.status !== 'postponed' && (
+        {hasLive && canAccessLive && match.status !== 'cancelled' && match.status !== 'postponed' && (
           <Link
             href={`/admin/partidos/${match.id}/live`}
             className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${

@@ -1,12 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { AddMatchEventPayload } from '@/types';
 import { GOAL_TYPES } from '@/types';
 
 export async function addMatchEvent(payload: AddMatchEventPayload) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: event, error } = await supabase
     .from('match_events')
@@ -46,7 +46,7 @@ export async function addMatchEvent(payload: AddMatchEventPayload) {
 }
 
 export async function deleteMatchEvent(eventId: string, matchId: string) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Leer el evento antes de borrar para revertir el marcador si es gol
   const { data: event } = await supabase

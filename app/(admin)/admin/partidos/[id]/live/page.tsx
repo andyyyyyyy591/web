@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getMatchById } from '@/lib/queries/matches';
 import { getPlayersByClub, getAllPlayers } from '@/lib/queries/players';
@@ -20,8 +20,16 @@ export default async function LiveControlPage({ params }: Props) {
   const role = getAdminRole(user);
   const userClubId = getAdminClubId(user);
 
+  // Require login
+  if (!user) redirect('/login');
+
   const match = await getMatchById(id);
   if (!match) notFound();
+
+  // Away team admin cannot access the live panel — only home team admin or super admin
+  if (role === 'team_admin' && userClubId !== match.home_club_id) {
+    redirect('/admin');
+  }
 
   const [allClubs, allSuspended, homeStaff, awayStaff, homeStaffIds, awayStaffIds] = await Promise.all([
     getClubs(),
@@ -69,6 +77,7 @@ export default async function LiveControlPage({ params }: Props) {
         players={matchPlayers}
         role={role}
         userClubId={userClubId}
+        isHomeAdmin={role === 'team_admin' && userClubId === match.home_club_id}
         suspendedPlayerIds={suspendedPlayerIds}
         homeCoachingStaff={homeStaff}
         awayCoachingStaff={awayStaff}
