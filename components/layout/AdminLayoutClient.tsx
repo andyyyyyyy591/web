@@ -88,7 +88,7 @@ export function AdminLayoutClient({ role, clubId, userEmail, children }: Props) 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
       {/* Logo */}
-      <div className="flex items-center justify-between border-b border-slate-200 p-4">
+      <div className="flex items-center justify-between border-b border-slate-200 px-4 pb-4 pt-safe-top">
         <Link href="/" className="flex items-center gap-2" onClick={() => setSidebarOpen(false)}>
           <img src="/favicon.png" alt="Conexión Sur" className="h-8 w-8 rounded-lg object-contain" />
           <div>
@@ -166,7 +166,8 @@ export function AdminLayoutClient({ role, clubId, userEmail, children }: Props) 
       {/* Main */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         {/* Mobile top bar */}
-        <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 md:hidden flex-shrink-0">
+        <header className="border-b border-slate-200 bg-white md:hidden flex-shrink-0 pt-safe-top">
+          <div className="flex items-center gap-3 px-4 py-3">
           <button
             onClick={() => setSidebarOpen(true)}
             className="rounded-lg p-1.5 text-slate-600 hover:bg-slate-100"
@@ -177,9 +178,10 @@ export function AdminLayoutClient({ role, clubId, userEmail, children }: Props) 
             <img src="/favicon.png" alt="Conexión Sur" className="h-7 w-7 rounded-lg object-contain" />
             <span className="text-sm font-semibold text-slate-800">Admin</span>
           </div>
+          </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto p-4 pb-admin-safe md:p-6 md:pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
           {children}
         </main>
       </div>

@@ -35,6 +35,10 @@
   .min-h-main {
     min-height: calc(100dvh - 2.75rem - env(safe-area-inset-top, 0px));
   }
+  /* Admin scrollable main: extra bottom padding for home indicator */
+  .pb-admin-safe {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* Prevent iOS Safari auto-zoom on input focus.
