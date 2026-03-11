@@ -4,19 +4,18 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { StandingWithClub, TopScorer, MatchDateWithMatches } from '@/types';
-import type { PlayerCardRecord } from '@/lib/queries/cards';
 import type { TournamentClubWithClub } from '@/lib/queries/tournament-clubs';
 import { MatchRow } from '@/components/partidos/MatchRow';
 
-const TABS = ['Tabla', 'Partidos', 'Goleadores', 'Tarjetas'] as const;
+const TABS = ['Tabla', 'Partidos', 'Goleadores'] as const;
 
 interface Props {
   divisionSlug: string;
   standings: StandingWithClub[];
   scorers: TopScorer[];
   matchDates: MatchDateWithMatches[];
-  cards: PlayerCardRecord[];
   tournamentClubs: TournamentClubWithClub[];
+  initialTab?: typeof TABS[number];
 }
 
 function ClubLogo({ url, name, size = 20 }: { url: string | null; name: string; size?: number }) {
@@ -88,20 +87,18 @@ function StandingsTable({ rows, title }: { rows: StandingWithClub[]; title?: str
   );
 }
 
-export function DivisionTabs({ divisionSlug, standings, scorers, matchDates, cards, tournamentClubs }: Props) {
-  const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Tabla');
+export function DivisionTabs({ divisionSlug, standings, scorers, matchDates, tournamentClubs, initialTab }: Props) {
+  const [activeTab, setActiveTab] = useState<typeof TABS[number]>(
+    initialTab && TABS.includes(initialTab as typeof TABS[number]) ? (initialTab as typeof TABS[number]) : 'Tabla'
+  );
   const allMatches = matchDates.flatMap((d) => d.matches);
 
   // Detect if this tournament uses zones
   const hasZones = tournamentClubs.some((tc) => tc.zone);
-  const zones = hasZones ? ['A', 'B'] : [null];
 
   const standingsZoneA = standings.filter((s) => s.zone === 'A');
   const standingsZoneB = standings.filter((s) => s.zone === 'B');
   const standingsNoZone = standings.filter((s) => !s.zone);
-  const clubsZoneA = tournamentClubs.filter((tc) => tc.zone === 'A');
-  const clubsZoneB = tournamentClubs.filter((tc) => tc.zone === 'B');
-  const clubsNoZone = tournamentClubs.filter((tc) => !tc.zone);
 
   return (
     <div>
@@ -192,47 +189,6 @@ export function DivisionTabs({ divisionSlug, standings, scorers, matchDates, car
                   <div className="flex items-center gap-1">
                     <span className="text-lg font-black text-accent">{s.goals}</span>
                     <span className="text-xs text-secondary">⚽</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )
-        )}
-
-        {/* ── TARJETAS ── */}
-        {activeTab === 'Tarjetas' && (
-          cards.length === 0 ? (
-            <p className="py-8 text-center text-sm text-secondary">Sin tarjetas registradas</p>
-          ) : (
-            <div className="space-y-1">
-              {cards.map((c) => (
-                <Link key={c.player_id} href={`/jugadores/${c.player_id}`}
-                  className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors border border-border">
-                  {c.photo_url ? (
-                    <Image src={c.photo_url} alt={c.first_name} width={32} height={32}
-                      className="h-8 w-8 rounded-full object-cover flex-shrink-0" />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-elevated text-xs font-bold text-secondary flex-shrink-0">
-                      {c.first_name[0]}{c.last_name[0]}
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-primary">{c.first_name} {c.last_name}</p>
-                    <p className="text-xs text-secondary">{c.club_name}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {c.yellow_cards > 0 && (
-                      <div className="flex items-center gap-1">
-                        <span className="inline-block h-3.5 w-2.5 rounded-sm bg-yellow-400" />
-                        <span className="text-xs font-bold text-primary">{c.yellow_cards}</span>
-                      </div>
-                    )}
-                    {(c.red_cards + c.second_yellows) > 0 && (
-                      <div className="flex items-center gap-1">
-                        <span className="inline-block h-3.5 w-2.5 rounded-sm bg-red-500" />
-                        <span className="text-xs font-bold text-primary">{c.red_cards + c.second_yellows}</span>
-                      </div>
-                    )}
                   </div>
                 </Link>
               ))}

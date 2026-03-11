@@ -23,8 +23,8 @@ const QUICK_LINKS: PageResult[] = [
   { label: 'Tabla · Cuarta División',   url: '/cuarta',              icon: '📊', description: 'Tabla de posiciones' },
   { label: 'Tabla · Quinta División',   url: '/quinta',              icon: '📊', description: 'Tabla de posiciones' },
   { label: 'Tabla · Séptima División',  url: '/septima',             icon: '📊', description: 'Tabla de posiciones' },
-  { label: 'Goleadores · Primera',      url: '/primera/goleadores',  icon: '🥅', description: 'Tabla de goleadores' },
-  { label: 'Goleadores · Cuarta',       url: '/cuarta/goleadores',   icon: '🥅', description: 'Tabla de goleadores' },
+  { label: 'Goleadores · Primera',      url: '/primera?tab=Goleadores',  icon: '🥅', description: 'Tabla de goleadores' },
+  { label: 'Goleadores · Cuarta',       url: '/cuarta?tab=Goleadores',   icon: '🥅', description: 'Tabla de goleadores' },
 ];
 
 function useDebounce<T>(value: T, delay: number): T {

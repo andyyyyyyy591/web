@@ -17,7 +17,7 @@ const SECTIONS = [
     label: 'Tabla',
     icon: '📊',
     description: 'Tabla de posiciones',
-    urlSuffix: '/tabla',
+    urlSuffix: '?tab=Tabla',
   },
   {
     key: 'fixture',
@@ -25,7 +25,7 @@ const SECTIONS = [
     label: 'Fixture',
     icon: '⚽',
     description: 'Fixture y resultados',
-    urlSuffix: '/fixture',
+    urlSuffix: '?tab=Partidos',
   },
   {
     key: 'goleadores',
@@ -33,7 +33,7 @@ const SECTIONS = [
     label: 'Goleadores',
     icon: '🥅',
     description: 'Tabla de goleadores',
-    urlSuffix: '/goleadores',
+    urlSuffix: '?tab=Goleadores',
   },
 ];
 

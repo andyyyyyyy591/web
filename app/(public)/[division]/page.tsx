@@ -3,16 +3,17 @@ import { getDivisionBySlug, getActiveTournamentByDivision } from '@/lib/queries/
 import { getStandingsByTournament } from '@/lib/queries/standings';
 import { getTopScorersByTournament } from '@/lib/queries/players';
 import { getMatchesByTournament } from '@/lib/queries/matches';
-import { getCardsByTournament } from '@/lib/queries/cards';
 import { getClubsByTournament } from '@/lib/queries/tournament-clubs';
 import { DivisionTabs } from './DivisionTabs';
 
 interface Props {
   params: Promise<{ division: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }
 
-export default async function DivisionPage({ params }: Props) {
+export default async function DivisionPage({ params, searchParams }: Props) {
   const { division: slug } = await params;
+  const { tab } = await searchParams;
   const division = await getDivisionBySlug(slug);
   if (!division) notFound();
 
@@ -27,11 +28,10 @@ export default async function DivisionPage({ params }: Props) {
     );
   }
 
-  const [standings, scorers, matchDates, cards, tournamentClubs] = await Promise.all([
+  const [standings, scorers, matchDates, tournamentClubs] = await Promise.all([
     getStandingsByTournament(tournament.id),
     getTopScorersByTournament(tournament.id),
     getMatchesByTournament(tournament.id),
-    getCardsByTournament(tournament.id),
     getClubsByTournament(tournament.id),
   ]);
 
@@ -48,8 +48,8 @@ export default async function DivisionPage({ params }: Props) {
         standings={standings}
         scorers={scorers}
         matchDates={matchDates}
-        cards={cards}
         tournamentClubs={tournamentClubs}
+        initialTab={tab as any}
       />
     </div>
   );
