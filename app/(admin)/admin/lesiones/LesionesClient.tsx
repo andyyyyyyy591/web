@@ -20,6 +20,7 @@ export function LesionesClient({ clubs, players, injuries, targetClubId, isSuper
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(BLANK);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,6 +31,7 @@ export function LesionesClient({ clubs, players, injuries, targetClubId, isSuper
     setEditingId(null);
     setForm(BLANK);
     setError(null);
+    setShowForm(true);
   }
 
   function openEdit(inj: PlayerInjuryWithPlayer) {
@@ -41,12 +43,14 @@ export function LesionesClient({ clubs, players, injuries, targetClubId, isSuper
       isActive: inj.is_active,
     });
     setError(null);
+    setShowForm(true);
   }
 
   function closeForm() {
     setEditingId(null);
     setForm(BLANK);
     setError(null);
+    setShowForm(false);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -82,7 +86,6 @@ export function LesionesClient({ clubs, players, injuries, targetClubId, isSuper
     });
   }
 
-  const formOpen = editingId !== null || form.description !== '' || form.playerId !== '';
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -117,7 +120,7 @@ export function LesionesClient({ clubs, players, injuries, targetClubId, isSuper
       )}
 
       {/* Form */}
-      {(formOpen || editingId !== null) && targetClubId && (
+      {showForm && targetClubId && (
         <form onSubmit={handleSave} className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
           <h2 className="font-semibold text-slate-800">
             {editingId ? 'Editar lesión' : 'Registrar lesión'}
