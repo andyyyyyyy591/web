@@ -86,7 +86,7 @@ export function ClubTabs({ clubId, matches, standings, transfers, trophies, news
   const [activeDivisionId, setActiveDivisionId] = useState(defaultDivisionId);
 
   const upcoming = matches.filter((m) => m.status === 'scheduled').slice(0, 3);
-  const recent = matches.filter((m) => m.status === 'finished').slice(0, 5);
+  const recent = matches.filter((m) => m.status === 'finished' && m.tournament.division.slug === 'primera').slice(0, 5);
   const clubStanding = standings.find((s) => s.club_id === clubId);
   const clubZone = clubStanding?.zone ?? null;
   // Para torneos de zonas, calcular posición solo dentro de la zona del club
