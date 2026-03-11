@@ -164,12 +164,13 @@ export function ClubTabs({ clubId, matches, standings, transfers, trophies, news
                     const result = myScore != null && theirScore != null
                       ? myScore > theirScore ? 'G' : myScore < theirScore ? 'P' : 'E'
                       : null;
-                    const badgeColor = result === 'G' ? 'bg-green-500' : result === 'P' ? 'bg-red-500' : 'bg-yellow-500';
+                    const badgeColor: Record<string, string> = { G: 'bg-green-500', P: 'bg-red-500', E: 'bg-yellow-500' };
+                    const badge = result ? badgeColor[result] : '';
                     return (
                       <div key={m.id} className="flex items-center">
                         <div className="flex-shrink-0 pl-4 pr-2">
                           {result
-                            ? <span className={`flex h-5 w-5 items-center justify-center rounded-sm text-[9px] font-black text-white ${badgeColor}`}>{result}</span>
+                            ? <span className={`flex h-5 w-5 items-center justify-center rounded-sm text-[9px] font-black text-white ${badge}`}>{result}</span>
                             : <span className="h-5 w-5" />
                           }
                         </div>

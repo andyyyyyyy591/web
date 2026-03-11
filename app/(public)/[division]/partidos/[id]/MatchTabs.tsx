@@ -210,7 +210,8 @@ export function MatchTabs({ match, homePosition, awayPosition, homeZone, awayZon
                       const result = myScore != null && theirScore != null
                         ? myScore > theirScore ? 'G' : myScore < theirScore ? 'P' : 'E'
                         : null;
-                      const color = result === 'G' ? 'bg-green-500' : result === 'P' ? 'bg-red-500' : 'bg-yellow-500';
+                      const resultColors: Record<string, string> = { G: 'bg-green-500', P: 'bg-red-500', E: 'bg-yellow-500' };
+                      const color = result ? resultColors[result] : 'bg-slate-500';
                       return (
                         <div key={m.id} className="flex items-center gap-1.5">
                           {result && <span className={`flex-shrink-0 w-4 h-4 rounded-sm text-[9px] font-black text-white flex items-center justify-center ${color}`}>{result}</span>}
@@ -231,7 +232,8 @@ export function MatchTabs({ match, homePosition, awayPosition, homeZone, awayZon
                       const result = myScore != null && theirScore != null
                         ? myScore > theirScore ? 'G' : myScore < theirScore ? 'P' : 'E'
                         : null;
-                      const color = result === 'G' ? 'bg-green-500' : result === 'P' ? 'bg-red-500' : 'bg-yellow-500';
+                      const resultColors: Record<string, string> = { G: 'bg-green-500', P: 'bg-red-500', E: 'bg-yellow-500' };
+                      const color = result ? resultColors[result] : 'bg-slate-500';
                       return (
                         <div key={m.id} className="flex items-center gap-1.5">
                           {result && <span className={`flex-shrink-0 w-4 h-4 rounded-sm text-[9px] font-black text-white flex items-center justify-center ${color}`}>{result}</span>}
