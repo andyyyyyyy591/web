@@ -157,7 +157,28 @@ export function ClubTabs({ clubId, matches, standings, transfers, trophies, news
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-secondary mb-2">Últimos resultados</p>
                 <div className="-mx-4 divide-y divide-border border-t border-border">
-                  {recent.map((m) => <MatchRow key={m.id} match={m} />)}
+                  {recent.map((m) => {
+                    const isHome = m.home_club_id === clubId;
+                    const myScore = isHome ? m.home_score : m.away_score;
+                    const theirScore = isHome ? m.away_score : m.home_score;
+                    const result = myScore != null && theirScore != null
+                      ? myScore > theirScore ? 'G' : myScore < theirScore ? 'P' : 'E'
+                      : null;
+                    const badgeColor = result === 'G' ? 'bg-green-500' : result === 'P' ? 'bg-red-500' : 'bg-yellow-500';
+                    return (
+                      <div key={m.id} className="flex items-center">
+                        <div className="flex-shrink-0 pl-4 pr-2">
+                          {result
+                            ? <span className={`flex h-5 w-5 items-center justify-center rounded-sm text-[9px] font-black text-white ${badgeColor}`}>{result}</span>
+                            : <span className="h-5 w-5" />
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <MatchRow match={m} />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

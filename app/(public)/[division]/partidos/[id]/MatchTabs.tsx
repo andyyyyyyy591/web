@@ -9,7 +9,8 @@ import { LiveClock } from '@/components/match/LiveClock';
 import { isLive, STATUS_LABELS, GOAL_TYPES } from '@/types';
 import type { MatchStaffEntry } from '@/lib/queries/coaching-staff';
 
-const TABS = ['Previa', 'Alineación', 'Directo'] as const;
+const ALL_TABS = ['Previa', 'Alineación', 'Directo'] as const;
+type TabName = typeof ALL_TABS[number];
 
 function formatDateTime(dt: string | null) {
   if (!dt) return '—';
@@ -76,7 +77,9 @@ interface Props {
 export function MatchTabs({ match, homePosition, awayPosition, homeZone, awayZone, homeSuspended, awaySuspended, homeInjured, awayInjured, matchStaff, homeRecent, awayRecent }: Props) {
   const homeStaff = matchStaff?.filter((s) => s.club_id === match.home_club_id).map((s) => s.staff);
   const awayStaff = matchStaff?.filter((s) => s.club_id === match.away_club_id).map((s) => s.staff);
-  const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Previa');
+  const hasLiveMode = match.tournament.division.has_live_mode;
+  const TABS = hasLiveMode ? ALL_TABS : ALL_TABS.filter((t) => t !== 'Alineación') as TabName[];
+  const [activeTab, setActiveTab] = useState<TabName>('Previa');
   const live = isLive(match.status);
   const finished = match.status === 'finished';
   const hasLineup = match.home_starters.length > 0 || match.away_starters.length > 0;
@@ -205,9 +208,9 @@ export function MatchTabs({ match, homePosition, awayPosition, homeZone, awayZon
                       const theirScore = isHome ? m.away_score : m.home_score;
                       const opponent = isHome ? (m.away_club.short_name ?? m.away_club.name) : (m.home_club.short_name ?? m.home_club.name);
                       const result = myScore != null && theirScore != null
-                        ? myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : 'E'
+                        ? myScore > theirScore ? 'G' : myScore < theirScore ? 'P' : 'E'
                         : null;
-                      const color = result === 'W' ? 'bg-green-500' : result === 'L' ? 'bg-red-500' : 'bg-slate-500';
+                      const color = result === 'G' ? 'bg-green-500' : result === 'P' ? 'bg-red-500' : 'bg-yellow-500';
                       return (
                         <div key={m.id} className="flex items-center gap-1.5">
                           {result && <span className={`flex-shrink-0 w-4 h-4 rounded-sm text-[9px] font-black text-white flex items-center justify-center ${color}`}>{result}</span>}
@@ -226,9 +229,9 @@ export function MatchTabs({ match, homePosition, awayPosition, homeZone, awayZon
                       const theirScore = isHome ? m.away_score : m.home_score;
                       const opponent = isHome ? (m.away_club.short_name ?? m.away_club.name) : (m.home_club.short_name ?? m.home_club.name);
                       const result = myScore != null && theirScore != null
-                        ? myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : 'E'
+                        ? myScore > theirScore ? 'G' : myScore < theirScore ? 'P' : 'E'
                         : null;
-                      const color = result === 'W' ? 'bg-green-500' : result === 'L' ? 'bg-red-500' : 'bg-slate-500';
+                      const color = result === 'G' ? 'bg-green-500' : result === 'P' ? 'bg-red-500' : 'bg-yellow-500';
                       return (
                         <div key={m.id} className="flex items-center gap-1.5">
                           {result && <span className={`flex-shrink-0 w-4 h-4 rounded-sm text-[9px] font-black text-white flex items-center justify-center ${color}`}>{result}</span>}
