@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import type { MatchDetail } from '@/types';
+import type { MatchDetail, MatchWithClubs } from '@/types';
 import { MatchTimeline } from '@/components/match/MatchTimeline';
 import { LineupSection } from '@/components/match/LineupSection';
 import { LiveClock } from '@/components/match/LiveClock';
@@ -69,9 +69,11 @@ interface Props {
   homeInjured?: InjuredEntry[];
   awayInjured?: InjuredEntry[];
   matchStaff?: MatchStaffEntry[];
+  homeRecent?: MatchWithClubs[];
+  awayRecent?: MatchWithClubs[];
 }
 
-export function MatchTabs({ match, homePosition, awayPosition, homeZone, awayZone, homeSuspended, awaySuspended, homeInjured, awayInjured, matchStaff }: Props) {
+export function MatchTabs({ match, homePosition, awayPosition, homeZone, awayZone, homeSuspended, awaySuspended, homeInjured, awayInjured, matchStaff, homeRecent, awayRecent }: Props) {
   const homeStaff = matchStaff?.filter((s) => s.club_id === match.home_club_id).map((s) => s.staff);
   const awayStaff = matchStaff?.filter((s) => s.club_id === match.away_club_id).map((s) => s.staff);
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Previa');
@@ -189,6 +191,57 @@ export function MatchTabs({ match, homePosition, awayPosition, homeZone, awayZon
                 </div>
               </div>
             )}
+            {/* Últimos resultados */}
+            {((homeRecent && homeRecent.length > 0) || (awayRecent && awayRecent.length > 0)) && (
+              <div className="rounded-xl bg-elevated px-4 py-3">
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-secondary">Últimos resultados</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Local */}
+                  <div className="space-y-1.5">
+                    <p className="mb-2 text-center text-[10px] font-semibold text-secondary truncate">{match.home_club.short_name ?? match.home_club.name}</p>
+                    {(homeRecent ?? []).map((m) => {
+                      const isHome = m.home_club_id === match.home_club_id;
+                      const myScore = isHome ? m.home_score : m.away_score;
+                      const theirScore = isHome ? m.away_score : m.home_score;
+                      const opponent = isHome ? (m.away_club.short_name ?? m.away_club.name) : (m.home_club.short_name ?? m.home_club.name);
+                      const result = myScore != null && theirScore != null
+                        ? myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : 'E'
+                        : null;
+                      const color = result === 'W' ? 'bg-green-500' : result === 'L' ? 'bg-red-500' : 'bg-slate-500';
+                      return (
+                        <div key={m.id} className="flex items-center gap-1.5">
+                          {result && <span className={`flex-shrink-0 w-4 h-4 rounded-sm text-[9px] font-black text-white flex items-center justify-center ${color}`}>{result}</span>}
+                          <span className="flex-1 truncate text-[10px] text-secondary">{opponent}</span>
+                          <span className="flex-shrink-0 text-[10px] font-bold text-primary tabular-nums">{myScore}–{theirScore}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Visitante */}
+                  <div className="space-y-1.5">
+                    <p className="mb-2 text-center text-[10px] font-semibold text-secondary truncate">{match.away_club.short_name ?? match.away_club.name}</p>
+                    {(awayRecent ?? []).map((m) => {
+                      const isHome = m.home_club_id === match.away_club_id;
+                      const myScore = isHome ? m.home_score : m.away_score;
+                      const theirScore = isHome ? m.away_score : m.home_score;
+                      const opponent = isHome ? (m.away_club.short_name ?? m.away_club.name) : (m.home_club.short_name ?? m.home_club.name);
+                      const result = myScore != null && theirScore != null
+                        ? myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : 'E'
+                        : null;
+                      const color = result === 'W' ? 'bg-green-500' : result === 'L' ? 'bg-red-500' : 'bg-slate-500';
+                      return (
+                        <div key={m.id} className="flex items-center gap-1.5">
+                          {result && <span className={`flex-shrink-0 w-4 h-4 rounded-sm text-[9px] font-black text-white flex items-center justify-center ${color}`}>{result}</span>}
+                          <span className="flex-1 truncate text-[10px] text-secondary">{opponent}</span>
+                          <span className="flex-shrink-0 text-[10px] font-bold text-primary tabular-nums">{myScore}–{theirScore}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {match.scheduled_at && (
               <InfoRow label="Fecha y hora" value={formatDateTime(match.scheduled_at)} />
             )}

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getMatchById } from '@/lib/queries/matches';
+import { getMatchById, getRecentMatchesByClub } from '@/lib/queries/matches';
 import { getStandingsByTournament } from '@/lib/queries/standings';
 import { getSuspendedPlayers } from '@/lib/queries/suspensions';
 import { getMatchCoachingStaff } from '@/lib/queries/coaching-staff';
@@ -16,11 +16,13 @@ export default async function MatchPage({ params }: Props) {
   const match = await getMatchById(id);
   if (!match) notFound();
 
-  const [standings, allSuspended, matchStaff, allInjuries] = await Promise.all([
+  const [standings, allSuspended, matchStaff, allInjuries, homeRecent, awayRecent] = await Promise.all([
     getStandingsByTournament(match.tournament_id).catch(() => []),
     getSuspendedPlayers(match.tournament_id).catch(() => []),
     getMatchCoachingStaff(id).catch(() => []),
     getActiveInjuriesByClubs([match.home_club_id, match.away_club_id]).catch(() => []),
+    getRecentMatchesByClub(match.home_club_id, 5).catch(() => []),
+    getRecentMatchesByClub(match.away_club_id, 5).catch(() => []),
   ]);
 
   const homeStanding = standings.find((s) => s.club_id === match.home_club_id);
@@ -72,6 +74,8 @@ export default async function MatchPage({ params }: Props) {
         homeInjured={homeInjured}
         awayInjured={awayInjured}
         matchStaff={matchStaff}
+        homeRecent={homeRecent}
+        awayRecent={awayRecent}
       />
     );
   }
@@ -88,6 +92,8 @@ export default async function MatchPage({ params }: Props) {
       homeInjured={homeInjured}
       awayInjured={awayInjured}
       matchStaff={matchStaff}
+      homeRecent={homeRecent}
+      awayRecent={awayRecent}
     />
   );
 }
