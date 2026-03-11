@@ -174,9 +174,7 @@ export function AdminLayoutClient({ role, clubId, userEmail, children }: Props) 
             <IconMenu />
           </button>
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-green-600 text-white font-bold text-xs">
-              LF
-            </div>
+            <img src="/favicon.png" alt="Conexión Sur" className="h-7 w-7 rounded-lg object-contain" />
             <span className="text-sm font-semibold text-slate-800">Admin</span>
           </div>
         </header>

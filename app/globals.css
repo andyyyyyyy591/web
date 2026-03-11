@@ -31,6 +31,10 @@
   .pb-nav-safe {
     padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
   }
+  /* Main content min-height: fills screen below TopBar (h-11 + safe-area-top) */
+  .min-h-main {
+    min-height: calc(100dvh - 2.75rem - env(safe-area-inset-top, 0px));
+  }
 }
 
 /* Prevent iOS Safari auto-zoom on input focus.
