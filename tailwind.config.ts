@@ -19,25 +19,25 @@ const config: Config = {
         border:   'rgba(0,0,0,0.09)',
         primary:  '#111827',
         secondary:'#6b7280',
-        // Accent
+        // Accent — gris Conexión Sur (del favicon)
         accent: {
-          DEFAULT: '#16a34a',
-          hover:   '#15803d',
-          dim:     'rgba(22,163,74,0.12)',
+          DEFAULT: '#666666',
+          hover:   '#555555',
+          dim:     'rgba(102,102,102,0.12)',
         },
         live: '#dc2626',
-        // Keep old colors for admin (light theme)
+        // Gray scale replacing old green palette (admin components)
         green: {
-          50:  '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#14532d',
+          50:  '#fafafa',
+          100: '#f5f5f5',
+          200: '#e5e5e5',
+          300: '#d4d4d4',
+          400: '#a3a3a3',
+          500: '#737373',
+          600: '#666666',
+          700: '#555555',
+          800: '#404040',
+          900: '#262626',
         },
         slate: {
           50:  '#f8fafc',
