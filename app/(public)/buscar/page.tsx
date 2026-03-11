@@ -14,7 +14,7 @@ interface PageResult {
 interface SearchResults {
   pages: PageResult[];
   clubs: Array<{ id: string; name: string; slug: string; logo_url: string | null; primary_color: string }>;
-  players: Array<{ id: string; first_name: string; last_name: string; photo_url: string | null; club_name: string }>;
+  players: Array<{ id: string; first_name: string; last_name: string; photo_url: string | null; club_name: string; is_injured: boolean; is_suspended: boolean }>;
   news: Array<{ id: string; title: string; slug: string; image_url: string | null; excerpt: string | null }>;
 }
 
@@ -177,17 +177,37 @@ export default function BuscarPage() {
                 {results.players.map((player) => (
                   <Link key={player.id} href={`/jugadores/${player.id}`}
                     className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors">
-                    {player.photo_url ? (
-                      <Image src={player.photo_url} alt={player.first_name} width={36} height={36}
-                        className="h-9 w-9 rounded-full object-cover shrink-0" />
-                    ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-elevated text-xs font-bold text-secondary shrink-0">
-                        {player.first_name[0]}{player.last_name[0]}
-                      </div>
-                    )}
-                    <div className="min-w-0">
+                    {/* Avatar */}
+                    <div className="relative shrink-0">
+                      {player.photo_url ? (
+                        <Image src={player.photo_url} alt={player.first_name} width={36} height={36}
+                          className="h-9 w-9 rounded-full object-cover" />
+                      ) : (
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-elevated text-xs font-bold text-secondary">
+                          {player.first_name[0]}{player.last_name[0]}
+                        </div>
+                      )}
+                      {/* Badge: suspendido tiene prioridad sobre lesionado */}
+                      {player.is_suspended && (
+                        <div className="absolute -bottom-0.5 -right-0.5 h-[13px] w-[9px] rounded-[2px] bg-red-600 border border-white/70 shadow-sm" />
+                      )}
+                      {!player.is_suspended && player.is_injured && (
+                        <div className="absolute -bottom-0.5 -right-0.5 h-[14px] w-[14px] rounded-full bg-white border border-red-300 shadow-sm flex items-center justify-center">
+                          <span className="text-[9px] font-black text-red-600 leading-none">+</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-primary">{player.first_name} {player.last_name}</p>
-                      <p className="text-xs text-secondary">{player.club_name}</p>
+                      <p className="text-xs text-secondary flex items-center gap-1.5">
+                        {player.club_name}
+                        {player.is_suspended && (
+                          <span className="text-[10px] font-semibold text-red-500">· Suspendido</span>
+                        )}
+                        {!player.is_suspended && player.is_injured && (
+                          <span className="text-[10px] font-semibold text-red-400">· Lesionado</span>
+                        )}
+                      </p>
                     </div>
                     <svg className="ml-auto h-4 w-4 text-secondary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>

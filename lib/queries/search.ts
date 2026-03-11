@@ -111,7 +111,7 @@ function matchPages(
 export interface SearchResults {
   pages: PageResult[];
   clubs: Club[];
-  players: Array<Player & { club_name: string }>;
+  players: Array<Player & { club_name: string; is_injured: boolean; is_suspended: boolean }>;
   news: News[];
 }
 
@@ -122,6 +122,7 @@ export async function search(query: string): Promise<SearchResults> {
   const q = query.trim();
   const supabase = await createClient();
 
+  // Round 1: all base queries in parallel
   const [divisionsRes, clubsRes, playersRes, newsRes] = await Promise.all([
     supabase.from('divisions').select('label, slug').order('id'),
 
@@ -154,10 +155,32 @@ export async function search(query: string): Promise<SearchResults> {
 
   const divisions = divisionsRes.data ?? [];
   const pages = matchPages(q, divisions);
+  const rawPlayers = playersRes.data ?? [];
 
-  const players = (playersRes.data ?? []).map((p: any) => ({
+  // Round 2: injuries + suspensions for found player IDs
+  const playerIds = rawPlayers.map((p: any) => p.id);
+  const [injuriesRes, suspensionsRes] = playerIds.length > 0
+    ? await Promise.all([
+        supabase
+          .from('player_injuries')
+          .select('player_id')
+          .in('player_id', playerIds)
+          .eq('is_active', true),
+        supabase
+          .from('player_suspensions')
+          .select('player_id')
+          .in('player_id', playerIds),
+      ])
+    : [{ data: [] }, { data: [] }];
+
+  const injuredIds = new Set((injuriesRes.data ?? []).map((r: any) => r.player_id));
+  const suspendedIds = new Set((suspensionsRes.data ?? []).map((r: any) => r.player_id));
+
+  const players = rawPlayers.map((p: any) => ({
     ...p,
     club_name: p.club?.name ?? '',
+    is_injured: injuredIds.has(p.id),
+    is_suspended: suspendedIds.has(p.id),
   }));
 
   return {

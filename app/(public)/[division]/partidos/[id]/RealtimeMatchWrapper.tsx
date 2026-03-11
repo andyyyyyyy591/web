@@ -10,6 +10,17 @@ interface SuspendedEntry {
   player_id: string;
   first_name: string;
   last_name: string;
+  photo_url: string | null;
+  reason: string;
+}
+
+interface InjuredEntry {
+  player_id: string;
+  first_name: string;
+  last_name: string;
+  photo_url: string | null;
+  description: string;
+  estimated_recovery: string | null;
 }
 
 interface RealtimeMatchWrapperProps {
@@ -18,10 +29,12 @@ interface RealtimeMatchWrapperProps {
   awayPosition?: number;
   homeSuspended?: SuspendedEntry[];
   awaySuspended?: SuspendedEntry[];
+  homeInjured?: InjuredEntry[];
+  awayInjured?: InjuredEntry[];
   matchStaff?: MatchStaffEntry[];
 }
 
-export function RealtimeMatchWrapper({ initialMatch, homePosition, awayPosition, homeSuspended, awaySuspended, matchStaff }: RealtimeMatchWrapperProps) {
+export function RealtimeMatchWrapper({ initialMatch, homePosition, awayPosition, homeSuspended, awaySuspended, homeInjured, awayInjured, matchStaff }: RealtimeMatchWrapperProps) {
   const match = useRealtimeMatch(initialMatch);
   const events = useRealtimeEvents(initialMatch.id, initialMatch.events);
 
@@ -31,5 +44,5 @@ export function RealtimeMatchWrapper({ initialMatch, homePosition, awayPosition,
     events,
   };
 
-  return <MatchTabs match={enrichedMatch} homePosition={homePosition} awayPosition={awayPosition} homeSuspended={homeSuspended} awaySuspended={awaySuspended} matchStaff={matchStaff} />;
+  return <MatchTabs match={enrichedMatch} homePosition={homePosition} awayPosition={awayPosition} homeSuspended={homeSuspended} awaySuspended={awaySuspended} homeInjured={homeInjured} awayInjured={awayInjured} matchStaff={matchStaff} />;
 }

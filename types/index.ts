@@ -497,6 +497,25 @@ export interface CreateSeasonPayload {
 }
 
 // ────────────────────────────────────────────────
+// LESIONES / INJURIES
+// ────────────────────────────────────────────────
+
+export interface PlayerInjury {
+  id: string;
+  player_id: string;
+  club_id: string;
+  description: string;
+  estimated_recovery: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlayerInjuryWithPlayer extends PlayerInjury {
+  player: Pick<Player, 'id' | 'first_name' | 'last_name' | 'photo_url'>;
+}
+
+// ────────────────────────────────────────────────
 // NOTICIAS
 // ────────────────────────────────────────────────
 

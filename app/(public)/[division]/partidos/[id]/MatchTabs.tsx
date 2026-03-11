@@ -4,8 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import type { MatchDetail } from '@/types';
 import { MatchTimeline } from '@/components/match/MatchTimeline';
-import { Formation } from '@/components/match/Formation';
-import { MatchLineup } from '@/components/match/MatchLineup';
+import { LineupSection } from '@/components/match/LineupSection';
 import { LiveClock } from '@/components/match/LiveClock';
 import { isLive, STATUS_LABELS, GOAL_TYPES } from '@/types';
 import type { MatchStaffEntry } from '@/lib/queries/coaching-staff';
@@ -46,6 +45,17 @@ interface SuspendedEntry {
   player_id: string;
   first_name: string;
   last_name: string;
+  photo_url: string | null;
+  reason: string;
+}
+
+interface InjuredEntry {
+  player_id: string;
+  first_name: string;
+  last_name: string;
+  photo_url: string | null;
+  description: string;
+  estimated_recovery: string | null;
 }
 
 interface Props {
@@ -54,10 +64,12 @@ interface Props {
   awayPosition?: number;
   homeSuspended?: SuspendedEntry[];
   awaySuspended?: SuspendedEntry[];
+  homeInjured?: InjuredEntry[];
+  awayInjured?: InjuredEntry[];
   matchStaff?: MatchStaffEntry[];
 }
 
-export function MatchTabs({ match, homePosition, awayPosition, homeSuspended, awaySuspended, matchStaff }: Props) {
+export function MatchTabs({ match, homePosition, awayPosition, homeSuspended, awaySuspended, homeInjured, awayInjured, matchStaff }: Props) {
   const homeStaff = matchStaff?.filter((s) => s.club_id === match.home_club_id).map((s) => s.staff);
   const awayStaff = matchStaff?.filter((s) => s.club_id === match.away_club_id).map((s) => s.staff);
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Previa');
@@ -203,34 +215,20 @@ export function MatchTabs({ match, homePosition, awayPosition, homeSuspended, aw
               Todavía no está disponible la alineación.
             </p>
           ) : (
-            <div className="space-y-6">
-              {(match.home_starters.length > 0 || match.away_starters.length > 0) && (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {match.home_starters.length > 0 && (
-                    <Formation starters={match.home_starters} label={match.home_club.name} />
-                  )}
-                  {match.away_starters.length > 0 && (
-                    <Formation starters={match.away_starters} label={match.away_club.name} />
-                  )}
-                </div>
-              )}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <MatchLineup
-                  starters={match.home_starters}
-                  subs={match.home_subs}
-                  clubName={match.home_club.name}
-                  suspended={homeSuspended}
-                  staff={homeStaff}
-                />
-                <MatchLineup
-                  starters={match.away_starters}
-                  subs={match.away_subs}
-                  clubName={match.away_club.name}
-                  suspended={awaySuspended}
-                  staff={awayStaff}
-                />
-              </div>
-            </div>
+            <LineupSection
+              homeStarters={match.home_starters}
+              awayStarters={match.away_starters}
+              homeSubs={match.home_subs}
+              awaySubs={match.away_subs}
+              homeClubName={match.home_club.name}
+              awayClubName={match.away_club.name}
+              homeStaff={homeStaff}
+              awayStaff={awayStaff}
+              homeSuspended={homeSuspended}
+              awaySuspended={awaySuspended}
+              homeInjured={homeInjured}
+              awayInjured={awayInjured}
+            />
           )
         )}
 

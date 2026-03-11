@@ -45,6 +45,7 @@ const navItems: NavItem[] = [
   { href: '/admin/partidos',      label: 'Partidos',       emoji: '⚽' },
   { href: '/admin/jugadores',     label: 'Jugadores',      emoji: '👤' },
   { href: '/admin/cuerpo-tecnico', label: 'Cuerpo técnico', emoji: '👨‍💼' },
+  { href: '/admin/lesiones',      label: 'Lesiones',       emoji: '🏥' },
   { href: '/admin/suspensiones',  label: 'Suspensiones',   emoji: '🟥', adminOnly: true },
   { href: '/admin/clubes',        label: 'Clubes',         emoji: '🏟️', adminOnly: true },
   { href: '/admin/noticias',      label: 'Noticias',       emoji: '📰', adminOnly: true },
