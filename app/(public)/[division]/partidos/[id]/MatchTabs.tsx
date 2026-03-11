@@ -210,11 +210,11 @@ export function MatchTabs({ match, homePosition, awayPosition, homeZone, awayZon
                       const result = myScore != null && theirScore != null
                         ? myScore > theirScore ? 'G' : myScore < theirScore ? 'P' : 'E'
                         : null;
-                      const resultColors: Record<string, string> = { G: 'bg-green-500', P: 'bg-red-500', E: 'bg-yellow-500' };
-                      const color = result ? resultColors[result] : 'bg-slate-500';
+                      const resultBg: Record<string, string> = { G: '#16a34a', P: '#dc2626', E: '#ca8a04' };
+                      const color = result ? resultBg[result] : '#6b7280';
                       return (
                         <div key={m.id} className="flex items-center gap-1.5">
-                          {result && <span className={`flex-shrink-0 w-4 h-4 rounded-sm text-[9px] font-black text-white flex items-center justify-center ${color}`}>{result}</span>}
+                          {result && <span className="flex-shrink-0 w-4 h-4 rounded-sm text-[9px] font-black text-white flex items-center justify-center" style={{ backgroundColor: color }}>{result}</span>}
                           <span className="flex-1 truncate text-[10px] text-secondary">{opponent}</span>
                           <span className="flex-shrink-0 text-[10px] font-bold text-primary tabular-nums">{myScore}–{theirScore}</span>
                         </div>
@@ -232,11 +232,11 @@ export function MatchTabs({ match, homePosition, awayPosition, homeZone, awayZon
                       const result = myScore != null && theirScore != null
                         ? myScore > theirScore ? 'G' : myScore < theirScore ? 'P' : 'E'
                         : null;
-                      const resultColors: Record<string, string> = { G: 'bg-green-500', P: 'bg-red-500', E: 'bg-yellow-500' };
-                      const color = result ? resultColors[result] : 'bg-slate-500';
+                      const resultBg: Record<string, string> = { G: '#16a34a', P: '#dc2626', E: '#ca8a04' };
+                      const color = result ? resultBg[result] : '#6b7280';
                       return (
                         <div key={m.id} className="flex items-center gap-1.5">
-                          {result && <span className={`flex-shrink-0 w-4 h-4 rounded-sm text-[9px] font-black text-white flex items-center justify-center ${color}`}>{result}</span>}
+                          {result && <span className="flex-shrink-0 w-4 h-4 rounded-sm text-[9px] font-black text-white flex items-center justify-center" style={{ backgroundColor: color }}>{result}</span>}
                           <span className="flex-1 truncate text-[10px] text-secondary">{opponent}</span>
                           <span className="flex-shrink-0 text-[10px] font-bold text-primary tabular-nums">{myScore}–{theirScore}</span>
                         </div>
