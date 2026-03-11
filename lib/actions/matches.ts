@@ -153,6 +153,61 @@ export async function createMatchesBatch(matches: CreateMatchPayload[]) {
   return { data, count: data.length };
 }
 
+/** Marca un partido como finalizado con el resultado indicado y recalcula standings. */
+export async function finalizeMatch(id: string, homeScore: number, awayScore: number) {
+  const admin = createAdminClient();
+  const { error } = await admin.from('matches').update({
+    status: 'finished',
+    finished_at: new Date().toISOString(),
+    home_score: homeScore,
+    away_score: awayScore,
+  }).eq('id', id);
+  if (error) return { error: error.message };
+
+  const supabase = await createClient();
+  const { data: matchData } = await supabase
+    .from('matches').select('tournament_id').eq('id', id).single();
+  if (matchData?.tournament_id) {
+    const { error: rpcErr } = await admin.rpc('recalculate_tournament_standings', {
+      p_tournament_id: matchData.tournament_id,
+    });
+    if (rpcErr) console.error('standings rpc error:', rpcErr.message);
+  }
+
+  revalidatePath(`/admin/partidos/${id}`);
+  revalidatePath('/admin/partidos');
+  revalidatePath('/');
+  return { success: true };
+}
+
+/** Vuelve un partido al estado programado (deshace la finalización). */
+export async function reopenMatch(id: string) {
+  const admin = createAdminClient();
+  const { error } = await admin.from('matches').update({
+    status: 'scheduled',
+    started_at: null,
+    finished_at: null,
+    home_score: null,
+    away_score: null,
+  }).eq('id', id);
+  if (error) return { error: error.message };
+
+  const supabase = await createClient();
+  const { data: matchData } = await supabase
+    .from('matches').select('tournament_id').eq('id', id).single();
+  if (matchData?.tournament_id) {
+    const { error: rpcErr } = await admin.rpc('recalculate_tournament_standings', {
+      p_tournament_id: matchData.tournament_id,
+    });
+    if (rpcErr) console.error('standings rpc error:', rpcErr.message);
+  }
+
+  revalidatePath(`/admin/partidos/${id}`);
+  revalidatePath('/admin/partidos');
+  revalidatePath('/');
+  return { success: true };
+}
+
 export async function deleteMatch(id: string) {
   const supabase = await createClient();
   const { error } = await supabase.from('matches').delete().eq('id', id);

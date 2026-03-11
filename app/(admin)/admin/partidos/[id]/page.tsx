@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { BackButton } from '@/components/ui/BackButton';
 import { MatchImageUpload } from './MatchImageUpload';
 import { MatchEditForm } from './MatchEditForm';
+import { FinishMatchButton } from './FinishMatchButton';
 import { requireSuperAdmin } from '@/lib/utils/admin-guard';
 
 interface Props {
@@ -77,6 +78,15 @@ export default async function AdminMatchPage({ params }: Props) {
           </div>
         </dl>
       </div>
+
+      <FinishMatchButton
+        matchId={id}
+        currentStatus={match.status}
+        currentHomeScore={match.home_score ?? null}
+        currentAwayScore={match.away_score ?? null}
+        homeClubName={match.home_club.name}
+        awayClubName={match.away_club.name}
+      />
 
       <MatchEditForm
         matchId={id}
