@@ -18,8 +18,7 @@ export async function uploadImage(
   const maxSize = 5 * 1024 * 1024; // 5 MB
   if (file.size > maxSize) return { error: 'El archivo supera 5 MB' };
 
-  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-  if (!allowed.includes(file.type)) return { error: 'Tipo de archivo no permitido' };
+  if (!file.type.startsWith('image/')) return { error: 'Tipo de archivo no permitido' };
 
   const ext = file.name.split('.').pop() ?? 'jpg';
   const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;

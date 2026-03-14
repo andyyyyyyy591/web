@@ -107,7 +107,7 @@ export function ImageUpload({ bucket, currentUrl, onUploaded, onUploading, label
               Quitar imagen
             </button>
           )}
-          <p className="text-xs text-slate-400">JPG, PNG, WebP · máx 5 MB</p>
+          <p className="text-xs text-slate-400">JPG, PNG, WebP, HEIC y más · máx 5 MB</p>
           {error && (
             <p className="rounded-lg bg-red-50 px-2 py-1.5 text-xs font-medium text-red-600">
               ⚠ {error}
@@ -118,7 +118,7 @@ export function ImageUpload({ bucket, currentUrl, onUploaded, onUploading, label
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept="image/*"
         className="hidden"
         onChange={handleChange}
       />
