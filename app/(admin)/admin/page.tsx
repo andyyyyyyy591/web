@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { createClient } from '@/lib/supabase/server';
+import { ClubLogo } from '@/components/ui/ClubLogo';
 import { getLiveMatches, getUpcomingMatches, getMatchesByClub } from '@/lib/queries/matches';
 import { getClubs, getClubById } from '@/lib/queries/clubs';
 import { getAllPlayers, getPlayersByClub } from '@/lib/queries/players';
@@ -37,14 +37,7 @@ export default async function AdminDashboard() {
       <div className="space-y-8">
         {/* Club header */}
         <div className="flex items-center gap-4">
-          {club?.logo_url ? (
-            <Image src={club.logo_url} alt={club.name} width={56} height={56}
-              className="h-14 w-14 rounded-full object-contain" />
-          ) : (
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-xl font-black text-green-700">
-              {club?.name?.slice(0, 2).toUpperCase() ?? '?'}
-            </div>
-          )}
+          <ClubLogo url={club?.logo_url ?? null} name={club?.name ?? '?'} size={56} primaryColor="#dcfce7" textColor="#15803d" />
           <div>
             <h1 className="text-2xl font-bold text-slate-900">{club?.name ?? 'Mi equipo'}</h1>
             <p className="text-sm text-slate-500">Panel de administración</p>

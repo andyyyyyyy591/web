@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { PlayerPhoto } from '@/components/ui/PlayerPhoto';
 import type { StandingWithClub, TopScorer, MatchDateWithMatches } from '@/types';
 import type { TournamentClubWithClub } from '@/lib/queries/tournament-clubs';
 import { MatchRow } from '@/components/partidos/MatchRow';
@@ -19,9 +20,11 @@ interface Props {
 }
 
 function ClubLogo({ url, name, size = 20 }: { url: string | null; name: string; size?: number }) {
-  if (url) return (
+  const [imgError, setImgError] = useState(false);
+  if (url && !imgError) return (
     <Image src={url} alt={name} width={size} height={size}
-      className="rounded-full object-contain flex-shrink-0" style={{ width: size, height: size }} />
+      className="rounded-full object-contain flex-shrink-0" style={{ width: size, height: size }}
+      onError={() => setImgError(true)} />
   );
   return (
     <div className="flex items-center justify-center rounded-full bg-elevated font-bold text-secondary flex-shrink-0"
@@ -174,14 +177,7 @@ export function DivisionTabs({ divisionSlug, standings, scorers, matchDates, tou
                 <Link key={s.player_id} href={`/jugadores/${s.player_id}`}
                   className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors border border-border">
                   <span className="w-5 text-center text-xs font-bold text-secondary">{i + 1}</span>
-                  {s.photo_url ? (
-                    <Image src={s.photo_url} alt={s.first_name} width={32} height={32}
-                      className="h-8 w-8 rounded-full object-cover flex-shrink-0" />
-                  ) : (
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-elevated text-xs font-bold text-secondary flex-shrink-0">
-                      {s.first_name[0]}{s.last_name[0]}
-                    </div>
-                  )}
+                  <PlayerPhoto url={s.photo_url} firstName={s.first_name} lastName={s.last_name} size={32} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-primary">{s.first_name} {s.last_name}</p>
                     <p className="text-xs text-secondary">{s.club_name}</p>

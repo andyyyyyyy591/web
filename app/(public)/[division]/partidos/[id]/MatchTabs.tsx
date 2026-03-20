@@ -26,10 +26,12 @@ function formatTime(dt: string | null) {
 }
 
 function ClubLogo({ url, name, size = 56 }: { url: string | null; name: string; size?: number }) {
-  if (url) {
+  const [imgError, setImgError] = useState(false);
+  if (url && !imgError) {
     return (
       <Image src={url} alt={name} width={size} height={size}
-        className="object-contain" style={{ width: size, height: size }} />
+        className="object-contain" style={{ width: size, height: size }}
+        onError={() => setImgError(true)} />
     );
   }
   return (

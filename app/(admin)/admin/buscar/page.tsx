@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { search } from '@/lib/queries/search';
+import { ClubLogo } from '@/components/ui/ClubLogo';
+import { PlayerPhoto } from '@/components/ui/PlayerPhoto';
 
 interface Props {
   searchParams: Promise<{ q?: string }>;
@@ -47,14 +48,7 @@ export default async function AdminBuscarPage({ searchParams }: Props) {
             {results.clubs.map((club) => (
               <Link key={club.id} href={`/admin/clubes/${club.id}`}
                 className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50">
-                {club.logo_url ? (
-                  <Image src={club.logo_url} alt={club.name} width={32} height={32} className="h-8 w-8 rounded-full object-contain" />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
-                    style={{ backgroundColor: club.primary_color }}>
-                    {club.name[0]}
-                  </div>
-                )}
+                <ClubLogo url={club.logo_url} name={club.name} size={32} primaryColor={club.primary_color} textColor="white" />
                 <span className="font-medium text-slate-800">{club.name}</span>
                 {club.short_name && <span className="text-sm text-slate-400">({club.short_name})</span>}
               </Link>
@@ -72,14 +66,7 @@ export default async function AdminBuscarPage({ searchParams }: Props) {
             {results.players.map((player) => (
               <Link key={player.id} href={`/admin/jugadores/${player.id}`}
                 className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50">
-                {player.photo_url ? (
-                  <Image src={player.photo_url} alt={player.first_name} width={32} height={32}
-                    className="h-8 w-8 rounded-full object-cover" />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-500">
-                    {player.first_name[0]}{player.last_name[0]}
-                  </div>
-                )}
+                <PlayerPhoto url={player.photo_url} firstName={player.first_name} lastName={player.last_name} size={32} />
                 <div>
                   <span className="font-medium text-slate-800">{player.first_name} {player.last_name}</span>
                   <span className="ml-2 text-sm text-slate-400">{player.club_name}</span>

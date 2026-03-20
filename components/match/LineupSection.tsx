@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import Image from 'next/image';
 import type { MatchLineupWithPlayer, CoachingStaff } from '@/types';
 import { FullPitchFormation } from './FullPitchFormation';
@@ -36,7 +39,8 @@ interface Props {
 }
 
 function PlayerAvatar({ photo, firstName, lastName }: { photo: string | null; firstName: string; lastName: string }) {
-  if (photo) {
+  const [imgError, setImgError] = useState(false);
+  if (photo && !imgError) {
     return (
       <Image
         src={photo}
@@ -44,6 +48,7 @@ function PlayerAvatar({ photo, firstName, lastName }: { photo: string | null; fi
         width={32}
         height={32}
         className="h-8 w-8 rounded-full object-cover"
+        onError={() => setImgError(true)}
       />
     );
   }
@@ -73,12 +78,13 @@ function MedicalBadge() {
 }
 
 function CoachCard({ staff }: { staff?: CoachingStaff }) {
+  const [imgError, setImgError] = useState(false);
   if (!staff) return <p className="text-xs text-secondary">—</p>;
   return (
     <div className="flex items-center gap-2.5">
       <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-card border border-border flex items-center justify-center">
-        {staff.photo_url ? (
-          <Image src={staff.photo_url} alt={staff.first_name} width={40} height={40} className="object-cover w-full h-full" />
+        {staff.photo_url && !imgError ? (
+          <Image src={staff.photo_url} alt={staff.first_name} width={40} height={40} className="object-cover w-full h-full" onError={() => setImgError(true)} />
         ) : (
           <span className="text-[10px] font-bold text-secondary">DT</span>
         )}
@@ -94,13 +100,14 @@ function CoachCard({ staff }: { staff?: CoachingStaff }) {
 }
 
 function SubCard({ lineup }: { lineup: MatchLineupWithPlayer }) {
+  const [imgError, setImgError] = useState(false);
   const photo = lineup.player.photo_url;
   const number = lineup.shirt_number ?? lineup.player.jersey_number;
   return (
     <div className="flex items-center gap-2 py-1.5">
       <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-card border border-border flex items-center justify-center">
-        {photo ? (
-          <Image src={photo} alt={lineup.player.first_name} width={32} height={32} className="object-cover w-full h-full" />
+        {photo && !imgError ? (
+          <Image src={photo} alt={lineup.player.first_name} width={32} height={32} className="object-cover w-full h-full" onError={() => setImgError(true)} />
         ) : (
           <span className="text-[10px] font-bold text-secondary">{number ?? '?'}</span>
         )}

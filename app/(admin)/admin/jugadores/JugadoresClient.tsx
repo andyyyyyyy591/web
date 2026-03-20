@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { PlayerPhoto } from '@/components/ui/PlayerPhoto';
 import type { Player } from '@/types';
 import { POSITION_LABELS } from '@/types';
 
@@ -104,14 +104,7 @@ export function JugadoresClient({ players, clubs, isTeamAdmin }: Props) {
               href={`/admin/jugadores/${p.id}`}
               className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3.5 transition hover:shadow-md hover:border-green-200"
             >
-              {p.photo_url ? (
-                <Image src={p.photo_url} alt={p.first_name} width={44} height={44}
-                  className="h-11 w-11 rounded-full object-cover flex-shrink-0" />
-              ) : (
-                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-bold text-slate-500">
-                  {p.first_name[0]}{p.last_name[0]}
-                </div>
-              )}
+              <PlayerPhoto url={p.photo_url} firstName={p.first_name} lastName={p.last_name} size={44} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-slate-800">
                   {p.first_name} {p.last_name}

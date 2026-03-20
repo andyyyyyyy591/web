@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { ClubLogo } from '@/components/ui/ClubLogo';
+import { PlayerPhoto } from '@/components/ui/PlayerPhoto';
 import type { StandingWithClub, MatchWithClubs, News, Division } from '@/types';
 import type { Trophy, TransferWithPlayer } from '@/types';
 import type { PlayerWithDivision } from '@/lib/queries/players';
@@ -31,12 +33,7 @@ function StandingsGroup({ rows, clubId }: { rows: StandingWithClub[]; clubId: st
               <td className="py-2.5 text-xs text-secondary pr-2">{i + 1}</td>
               <td className="py-2.5">
                 <div className="flex items-center gap-2">
-                  {s.club.logo_url ? (
-                    <Image src={s.club.logo_url} alt={s.club.name} width={18} height={18}
-                      className="rounded-full object-contain" />
-                  ) : (
-                    <div className="h-[18px] w-[18px] rounded-full bg-elevated" />
-                  )}
+                  <ClubLogo url={s.club.logo_url} name={s.club.name} size={18} />
                   <span className={`text-sm font-semibold ${s.club_id === clubId ? 'text-accent' : 'text-primary'}`}>
                     {s.club.short_name || s.club.name}
                   </span>
@@ -194,14 +191,7 @@ export function ClubTabs({ clubId, matches, standings, transfers, trophies, news
                   {players.filter((p) => p.primary_division_id === primeraDiv?.id).slice(0, 6).map((p) => (
                     <Link key={p.id} href={`/jugadores/${p.id}`}
                       className="flex items-center gap-2 rounded-xl bg-card px-3 py-2.5 hover:bg-elevated transition-colors">
-                      {p.photo_url ? (
-                        <Image src={p.photo_url} alt={p.first_name} width={28} height={28}
-                          className="h-7 w-7 rounded-full object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-elevated text-[9px] font-bold text-secondary">
-                          {p.first_name[0]}{p.last_name[0]}
-                        </div>
-                      )}
+                      <PlayerPhoto url={p.photo_url} firstName={p.first_name} lastName={p.last_name} size={28} />
                       <div className="min-w-0">
                         <p className="text-xs font-semibold text-primary truncate">{p.first_name} {p.last_name}</p>
                         {p.jersey_number != null && (
@@ -252,14 +242,7 @@ export function ClubTabs({ clubId, matches, standings, transfers, trophies, news
                       {divPlayers.map((p) => (
                         <Link key={p.id} href={`/jugadores/${p.id}`}
                           className="flex items-center gap-2 rounded-xl bg-card px-3 py-2.5 hover:bg-elevated transition-colors">
-                          {p.photo_url ? (
-                            <Image src={p.photo_url} alt={p.first_name} width={32} height={32}
-                              className="h-8 w-8 rounded-full object-cover flex-shrink-0" />
-                          ) : (
-                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-elevated text-[10px] font-bold text-secondary">
-                              {p.first_name[0]}{p.last_name[0]}
-                            </div>
-                          )}
+                          <PlayerPhoto url={p.photo_url} firstName={p.first_name} lastName={p.last_name} size={32} />
                           <div className="min-w-0">
                             <p className="text-xs font-semibold text-primary truncate">{p.last_name} {p.first_name}</p>
                             {p.jersey_number != null && (
@@ -320,14 +303,7 @@ export function ClubTabs({ clubId, matches, standings, transfers, trophies, news
                     {incoming.map((t) => (
                       <Link key={t.id} href={`/jugadores/${t.player_id}`}
                         className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors">
-                        {t.player.photo_url ? (
-                          <Image src={t.player.photo_url} alt={t.player.first_name} width={32} height={32}
-                            className="h-8 w-8 rounded-full object-cover" />
-                        ) : (
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-elevated text-xs font-bold text-secondary">
-                            {t.player.first_name[0]}{t.player.last_name[0]}
-                          </div>
-                        )}
+                        <PlayerPhoto url={t.player.photo_url} firstName={t.player.first_name} lastName={t.player.last_name} size={32} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-primary">{t.player.first_name} {t.player.last_name}</p>
                           {t.notes && <p className="text-xs text-secondary">{t.notes}</p>}
@@ -345,14 +321,7 @@ export function ClubTabs({ clubId, matches, standings, transfers, trophies, news
                     {outgoing.map((t) => (
                       <Link key={t.id} href={`/jugadores/${t.player_id}`}
                         className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors">
-                        {t.player.photo_url ? (
-                          <Image src={t.player.photo_url} alt={t.player.first_name} width={32} height={32}
-                            className="h-8 w-8 rounded-full object-cover" />
-                        ) : (
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-elevated text-xs font-bold text-secondary">
-                            {t.player.first_name[0]}{t.player.last_name[0]}
-                          </div>
-                        )}
+                        <PlayerPhoto url={t.player.photo_url} firstName={t.player.first_name} lastName={t.player.last_name} size={32} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-secondary">{t.player.first_name} {t.player.last_name}</p>
                           {t.notes && <p className="text-xs text-secondary">{t.notes}</p>}
