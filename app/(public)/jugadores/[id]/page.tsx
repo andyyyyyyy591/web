@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
+import { PlayerPhoto } from '@/components/ui/PlayerPhoto';
+import { ClubLogo } from '@/components/ui/ClubLogo';
 import { getPlayerById, getPlayerStats, getPlayerMatchHistory } from '@/lib/queries/players';
 import { POSITION_LABELS } from '@/types';
 import { PlayerTabs } from './PlayerTabs';
@@ -31,24 +32,19 @@ export default async function JugadorPage({ params }: Props) {
       {/* Header */}
       <div className="bg-elevated px-4 pb-6 pt-4">
         <div className="flex items-center gap-4">
-          {player.photo_url ? (
-            <Image src={player.photo_url} alt={`${player.first_name} ${player.last_name}`}
-              width={72} height={72} className="rounded-full object-cover flex-shrink-0" />
-          ) : (
-            <div className="flex h-18 w-18 flex-shrink-0 items-center justify-center rounded-full bg-card text-xl font-bold text-secondary"
-              style={{ width: 72, height: 72 }}>
-              {player.first_name[0]}{player.last_name[0]}
-            </div>
-          )}
+          <PlayerPhoto
+            url={player.photo_url}
+            firstName={player.first_name}
+            lastName={player.last_name}
+            size={72}
+          />
           <div className="min-w-0">
             <h1 className="text-xl font-black text-primary">
               {player.first_name} {player.last_name}
             </h1>
             <Link href={`/clubes/${player.club.slug}`}
               className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-accent">
-              {player.club.logo_url && (
-                <Image src={player.club.logo_url} alt={player.club.name} width={14} height={14} className="object-contain" />
-              )}
+              <ClubLogo url={player.club.logo_url} name={player.club.name} size={14} />
               {player.club.name}
             </Link>
             <div className="mt-1.5 flex flex-wrap gap-1.5">

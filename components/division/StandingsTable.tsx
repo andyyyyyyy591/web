@@ -1,5 +1,5 @@
-import Image from 'next/image';
 import Link from 'next/link';
+import { ClubLogo } from '@/components/ui/ClubLogo';
 import type { StandingWithClub } from '@/types';
 
 interface StandingsTableProps {
@@ -40,15 +40,7 @@ export function StandingsTable({ standings, compact = false }: StandingsTablePro
                   href={`/clubes/${s.club.slug}`}
                   className="flex items-center gap-2 hover:text-green-700"
                 >
-                  {s.club.logo_url && (
-                    <Image
-                      src={s.club.logo_url}
-                      alt={s.club.name}
-                      width={20}
-                      height={20}
-                      className="object-contain"
-                    />
-                  )}
+                  <ClubLogo url={s.club.logo_url} name={s.club.name} size={20} />
                   <span className="font-medium">{s.club.short_name ?? s.club.name}</span>
                 </Link>
               </td>

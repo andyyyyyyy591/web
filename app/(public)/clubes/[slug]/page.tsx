@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
+import { ClubLogo } from '@/components/ui/ClubLogo';
 import { getClubBySlug, getClubTrophies, getClubTransfers, getNewsByClub } from '@/lib/queries/clubs';
 import { getPlayersByClubWithDivision } from '@/lib/queries/players';
 import { getMatchesByClub } from '@/lib/queries/matches';
@@ -44,17 +44,13 @@ export default async function ClubPage({ params }: Props) {
       {/* Header */}
       <div className="bg-elevated px-4 pb-5 pt-4">
         <div className="flex items-center gap-4">
-          {club.logo_url ? (
-            <Image src={club.logo_url} alt={club.name} width={72} height={72}
-              className="rounded-full object-contain flex-shrink-0" />
-          ) : (
-            <div
-              className="flex h-[72px] w-[72px] flex-shrink-0 items-center justify-center rounded-full text-2xl font-black text-white"
-              style={{ backgroundColor: club.primary_color || '#333' }}
-            >
-              {(club.short_name ?? club.name).slice(0, 2).toUpperCase()}
-            </div>
-          )}
+          <ClubLogo
+            url={club.logo_url}
+            name={club.short_name ?? club.name}
+            size={72}
+            primaryColor={club.primary_color || '#333'}
+            textColor="white"
+          />
           <div className="min-w-0">
             <h1 className="text-xl font-black text-primary">{club.name}</h1>
             {club.short_name && (

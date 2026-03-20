@@ -49,10 +49,12 @@ function LiveMinute({ match }: { match: MatchWithClubs }) {
 }
 
 function ClubLogo({ url, name, size = 28 }: { url: string | null; name: string; size?: number }) {
-  if (url) {
+  const [imgError, setImgError] = useState(false);
+  if (url && !imgError) {
     return (
       <Image src={url} alt={name} width={size} height={size}
-        className="rounded-full object-contain shrink-0" style={{ width: size, height: size }} />
+        className="rounded-full object-contain shrink-0" style={{ width: size, height: size }}
+        onError={() => setImgError(true)} />
     );
   }
   return (

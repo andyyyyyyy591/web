@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { ClubLogo } from '@/components/ui/ClubLogo';
+import { PlayerPhoto } from '@/components/ui/PlayerPhoto';
 
 interface PageResult {
   label: string;
@@ -150,15 +152,13 @@ export default function BuscarPage() {
                 {results.clubs.map((club) => (
                   <Link key={club.id} href={`/clubes/${club.slug}`}
                     className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors">
-                    {club.logo_url ? (
-                      <Image src={club.logo_url} alt={club.name} width={36} height={36}
-                        className="h-9 w-9 rounded-full object-contain shrink-0" />
-                    ) : (
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full font-bold text-sm text-white shrink-0"
-                        style={{ backgroundColor: club.primary_color || '#444' }}>
-                        {club.name.slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
+                    <ClubLogo
+                      url={club.logo_url}
+                      name={club.name}
+                      size={36}
+                      primaryColor={club.primary_color || '#444'}
+                      textColor="white"
+                    />
                     <span className="text-sm font-semibold text-primary">{club.name}</span>
                     <svg className="ml-auto h-4 w-4 text-secondary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
@@ -179,14 +179,12 @@ export default function BuscarPage() {
                     className="flex items-center gap-3 rounded-xl bg-card px-3 py-3 hover:bg-elevated transition-colors">
                     {/* Avatar */}
                     <div className="relative shrink-0">
-                      {player.photo_url ? (
-                        <Image src={player.photo_url} alt={player.first_name} width={36} height={36}
-                          className="h-9 w-9 rounded-full object-cover" />
-                      ) : (
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-elevated text-xs font-bold text-secondary">
-                          {player.first_name[0]}{player.last_name[0]}
-                        </div>
-                      )}
+                      <PlayerPhoto
+                        url={player.photo_url}
+                        firstName={player.first_name}
+                        lastName={player.last_name}
+                        size={36}
+                      />
                       {/* Badge: suspendido tiene prioridad sobre lesionado */}
                       {player.is_suspended && (
                         <div className="absolute -bottom-0.5 -right-0.5 h-[13px] w-[9px] rounded-[2px] bg-red-600 border border-white/70 shadow-sm" />
